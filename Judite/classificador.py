@@ -26,7 +26,7 @@ class SenhaLogin:
         self.root.title("Login")
         self.root.geometry("247x100")
         self.root.config(bg='#f4f4f4')
-        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automação\Judite\icon.ico")
+        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         self.titulosenha = tk.Label(root, text="Importador de Extratos está protegido.", font=("Roboto", 10), bg='#f4f4f4')
         self.titulosenha.grid(row=2, column=0, columnspan=2, pady=5, padx=10, sticky="w")
@@ -68,9 +68,9 @@ class ImportadorExtratos:
         self.root.geometry("1000x600")
         self.root.config(bg='#D9D9D9')
         self.root.state("zoomed")
-        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automação\Judite\icon.ico")
+        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
-        csv_file_path = r"C:\Users\regina.santos\Desktop\Automação\Judite\bancodedadosrv01.csv"
+        csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\bancodedadosrv01.csv"
         self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
 
         for i in range(6):
@@ -401,13 +401,6 @@ class ImportadorExtratos:
                 print(f"Valores encontrados - Débito: '{debito}', Crédito: '{credito}'")
 
                 # Substituir #BCO pela conta ativo
-                if conta_ativo:
-                    if debito == "#BCO":
-                        print(f"Substituindo débito #BCO por {conta_ativo}")
-                        debito = conta_ativo
-                    if credito == "#BCO":
-                        print(f"Substituindo crédito #BCO por {conta_ativo}")
-                        credito = conta_ativo
 
                 # Atualizar valores na Treeview
                 values[7] = debito  # Coluna de débito
@@ -1047,7 +1040,7 @@ class TelaSelecaoConta:
         self.root.title("Importador")
         self.root.geometry("480x210")
         self.root.config(bg='#f4f4f4')
-        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automação\Judite\icon.ico")
+        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
         self.title_label = tk.Label(root, text="Qual conta bancária irá importar?", font=("Roboto", 17, "bold"), bg='#f4f4f4') #? titulo
@@ -1233,7 +1226,7 @@ class TelaNovaConta:
         self.root.title("Nova Conta")
         self.root.geometry("480x240")
         self.root.config(bg='#f4f4f4')
-        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automação\Judite\icon.ico")
+        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
         self.title_label = tk.Label(root, text="Informações da conta bancária", font=("Roboto", 17, "bold"), bg='#f4f4f4') #? titulo
@@ -1309,7 +1302,7 @@ class TelaNovaEmpresa:
         self.root.title("Nova Empresa")
         self.root.geometry("480x210")
         self.root.config(bg='#f4f4f4')
-        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automação\Judite\icon.ico")
+        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
         self.title_label = tk.Label(root, text="Informe os dados da empresa", font=("Roboto", 17, "bold"), bg='#f4f4f4') #? titulo
