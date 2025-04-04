@@ -171,7 +171,7 @@ class ImportadorExtratos:
         #* -------------------- TREEVIEW PARA EXIBIR OS DADOS IMPORTADOS -------------------- #
         self.tree = ttk.Treeview(root, columns=(
             "DataLEB", "DescriçãoLEB", "NDocLEB", "ValorLEB", "SaldoLEB",
-            "LançamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
+            "LancamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
             "C-C/CLC", "CNPJLC", "HistóricoLC", "ValorLC"
         ), show="headings")
 
@@ -181,7 +181,7 @@ class ImportadorExtratos:
         self.tree.heading("NDocLEB", text="N° Doc")
         self.tree.heading("ValorLEB", text="Valor")
         self.tree.heading("SaldoLEB", text="Saldo")
-        self.tree.heading("LançamentoLC", text="Lançamento")
+        self.tree.heading("LancamentoLC", text="Lançamento")
         self.tree.heading("DataLC", text="Data")
         self.tree.heading("DébitoLC", text="Débito")
         self.tree.heading("D-C/CLC", text="D-C/C")
@@ -197,7 +197,7 @@ class ImportadorExtratos:
         self.tree.column("NDocLEB", width=60)
         self.tree.column("ValorLEB", width=60)
         self.tree.column("SaldoLEB", width=60)
-        self.tree.column("LançamentoLC", width=150)
+        self.tree.column("LancamentoLC", width=150)
         self.tree.column("DataLC", width=60)
         self.tree.column("DébitoLC", width=60)
         self.tree.column("D-C/CLC", width=50)
@@ -339,7 +339,7 @@ class ImportadorExtratos:
                         lancamento_simplificado = padrao
                         break
             
-            lancamento_idx = self.tree["columns"].index("LançamentoLC") # atualizar o lançamento
+            lancamento_idx = self.tree["columns"].index("LancamentoLC") # atualizar o lançamento
             values[lancamento_idx] = lancamento_simplificado
             
             if incluir_banco: # adicionar identificação do banco se solicitado
@@ -359,7 +359,8 @@ class ImportadorExtratos:
         # Iterar sobre os itens na Treeview para classificar débito e crédito
         for item in self.tree.get_children():
             values = self.tree.item(item, 'values')
-            descricao = values[1]  # a descricao está na segunda coluna
+            descricao_idx = self.tree["columns"].index("LancamentoLC")
+            descricao = values[descricao_idx]  # a descricao está na segunda coluna
 
             # procura a descrição e o tipo no banco
             correspondencia = self.df_banco_dados[self.df_banco_dados['Descricao'] == descricao]
@@ -706,11 +707,11 @@ class ImportadorExtratos:
         ws = wb.active
 
         #* -------------------- DEFINE OS CABEÇALHOS DAS COLUNAS -------------------- #
-        colunas_exportar = ["LançamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
+        colunas_exportar = ["LancamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
                       "C-C/CLC", "CNPJLC", "HistóricoLC", "ValorLC"]
         
         headers = {
-            "LançamentoLC": "Lançamento",
+            "LancamentoLC": "Lançamento",
             "DataLC": "Data",
             "DébitoLC": "Débito",
             "D-C/CLC": "D-C/C",
@@ -742,7 +743,7 @@ class ImportadorExtratos:
 
     def limpar_classificacao(self):
         colunas_para_limpar = [
-            "LançamentoLC", "DataLC", "DébitoLC", "CréditoLC",
+            "LancamentoLC", "DataLC", "DébitoLC", "CréditoLC",
             "HistóricoLC", "ValorLC"
         ]
         
