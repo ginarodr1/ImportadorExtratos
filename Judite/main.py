@@ -11,6 +11,7 @@ import locale
 from datetime import datetime
 import traceback
 import xlrd
+from unidecode import unidecode
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
@@ -70,7 +71,7 @@ class ImportadorExtratos:
         self.root.state("zoomed")
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
-        csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\bancodedadosrv01.csv"
+        csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\lancamentoscontas1.csv"
         self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
 
         for i in range(6):
@@ -339,10 +340,9 @@ class ImportadorExtratos:
             "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS": "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS",
             "ENCARGOS C GARANTIA ENCARGO": "ENCARGOS C GARANTIA ENCARGO",
             "ENCARGOS C GARANTIDA ENCARGO CONTR": "ENCARGOS C GARANTIDA ENCARGO", 
-            "ENCARGOS C GARANTIA IOF": "ENCARGOS C GARANTIA IOF",
-            "ENCARGOS C GARANTIDA IOF CONTR": "ENCARGOS C GARANTIDA IOF",
+            "ENCARGOS C GARANTIDA IOF     CONTR": "ENCARGOS C GARANTIDA IOF",
             "TARIFA REGISTRO COBRANCA": "TARIFA REGISTRO COBRANCA",
-            "PAGTO ELETRON COBRANCA": "PAGTO ELETRON COBRANCA",
+            "PAGTO ELETRON  COBRANCA": "PAGTO ELETRON  COBRANCA",
             "VISA CREDITO": "VISA CREDITO",
             "RECEBIMENTO FORNECEDOR": "RECEBIMENTO FORNECEDOR",
             "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET": "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET",
@@ -394,14 +394,24 @@ class ImportadorExtratos:
         if considerar_descricao_bancaria:
             messagebox.showinfo("Classificar Dados", "Funcionalidade ainda não implementada.")
 
+        df_descricoes_normalizadas = self.df_banco_dados['Descricao'].apply(
+            lambda x: unidecode(str(x).strip().upper())
+        )
+
         # Iterar sobre os itens na Treeview para classificar débito e crédito
         for item in self.tree.get_children():
             values = self.tree.item(item, 'values')
             descricao_idx = self.tree["columns"].index("LancamentoLC")
             descricao = values[descricao_idx]  # a descricao está na segunda coluna
 
+            descricao_normalizada = unidecode(str(descricao).strip().upper())
+
+            correspondencia = self.df_banco_dados[
+                df_descricoes_normalizadas == descricao_normalizada
+            ]
+
             # procura a descrição e o tipo no banco
-            correspondencia = self.df_banco_dados[self.df_banco_dados['Descricao'] == descricao]
+            #correspondencia = self.df_banco_dados[self.df_banco_dados['Descricao'] == descricao]
 
             if not correspondencia.empty:
                 # Obter os valores correspondentes usando índices
