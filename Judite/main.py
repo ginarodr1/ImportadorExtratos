@@ -20,48 +20,6 @@ def open_main_window():
     app = ImportadorExtratos(root)
     root.mainloop()
 
-class SenhaLogin:
-    def __init__(self, root, callback):
-        self.root = root
-        self.callback = callback
-        self.root.title("Login")
-        self.root.geometry("247x100")
-        self.root.config(bg='#f4f4f4')
-        self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
-
-        self.titulosenha = tk.Label(root, text="Importador de Extratos está protegido.", font=("Roboto", 10), bg='#f4f4f4')
-        self.titulosenha.grid(row=2, column=0, columnspan=2, pady=5, padx=10, sticky="w")
-
-        self.senha_label = tk.Label(root, text="Senha:", font=("Roboto", 10), bg='#f4f4f4')
-        self.senha_label.grid(row=3, column=0, columnspan=2, pady=5, padx=10, sticky="w")
-
-        self.senha_entry = tk.Entry(root, show="*", font=("Roboto", 10), width=20)
-        self.senha_entry.grid(row=3, column=0, padx=60, sticky="w")
-
-        self.login_button = tk.Button(root, text="Entrar", command=self.verificar_senha, font=("Roboto", 10), bg="#4CAF50", fg="white")
-        self.login_button.grid(row=4, column=0, columnspan=1, padx=27, sticky="e")
-
-        self.senha_entry.bind("<Return>", lambda event: self.verificar_senha())
-
-        self.root.after(0, lambda: self.root.focus_force())
-        self.senha_entry.focus_set()
-
-        self.senha_hash = b'$2b$12$ZlVoXX9jSkWwL.jkPDVgdOlaN0vSecKPWIl8WoEfiUJLA..1A24WS' #! senha em hash gerada e armazenada
-
-    def verificar_senha(self):
-        senha = self.senha_entry.get()
-        if bcrypt.checkpw(senha.encode(), self.senha_hash):
-            self.root.destroy()
-            self.callback()
-        else:
-            messagebox.showerror("Erro", "Senha incorreta!")
-            self.senha_entry.delete(0, tk.END)
-
-
-
-
-
-
 class ImportadorExtratos:
     def __init__(self, root):
         self.root = root
@@ -175,25 +133,11 @@ class ImportadorExtratos:
         self.linhadeajuda_label.grid(row=1, column=5)
 
         #* -------------------- TREEVIEW PARA EXIBIR OS DADOS IMPORTADOS -------------------- #
-        self.frame_tree = tk.Frame(root)
-        self.frame_tree.grid(row=7, column=0, columnspan=6, pady=5, padx=10, sticky="nsew")
-
-        # Crie a Treeview dentro do frame
-        self.tree = ttk.Treeview(self.frame_tree, columns=(
+        self.tree = ttk.Treeview(root, columns=(
             "DataLEB", "DescriçãoLEB", "NDocLEB", "ValorLEB", "SaldoLEB",
             "LancamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
             "C-C/CLC", "CNPJLC", "HistóricoLC", "ValorLC"
         ), show="headings")
-
-        # Crie a Scrollbar vertical
-        self.scrollbar_y = ttk.Scrollbar(self.frame_tree, orient="vertical", command=self.tree.yview)
-        self.scrollbar_y.pack(side="right", fill="y")
-
-        # Configure a Treeview para usar a Scrollbar
-        self.tree.configure(yscrollcommand=self.scrollbar_y.set)
-
-        # Empacote a Treeview
-        self.tree.pack(side="left", fill="both", expand=True)
 
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
@@ -226,6 +170,7 @@ class ImportadorExtratos:
         self.tree.column("CNPJLC", width=80)
         self.tree.column("HistóricoLC", width=100)
         self.tree.column("ValorLC", width=80)
+        self.tree.grid(row=7, column=0, columnspan=6, pady=5, padx=10, sticky="nsew")
 
         #* -------------------- TORNAR A TREEVIEW EXPANSÍVEL -------------------- #
         root.grid_rowconfigure(7, weight=1)
@@ -307,13 +252,12 @@ class ImportadorExtratos:
             valor_origem = values[self.tree["columns"].index(coluna_origem)]
             self.tree.set(item, coluna_destino, valor_origem)
 
-
         #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
     def classificar_dados(self):
         conta_bancaria = self.conta_entry.get()
         incluir_banco = messagebox.askyesno("Classificar Dados", "Deseja incluir a identificação do banco no histórico contábil?")
         
-        considerar_descricao_bancaria = messagebox.askyesno("Classificar Dados", "Deseja considerar a descrição bancária como histórico contábil ao invés do histórico padrão parametrizado?")
+        #considerar_descricao_bancaria = messagebox.askyesno("Classificar Dados", "Deseja considerar a descrição bancária como histórico contábil ao invés do histórico padrão parametrizado?")
         
         self.copiar_coluna("DataLEB", "DataLC")
         self.copiar_coluna("ValorLEB", "ValorLC")
@@ -391,8 +335,8 @@ class ImportadorExtratos:
             
             self.tree.item(item, values=values)
 
-        if considerar_descricao_bancaria:
-            messagebox.showinfo("Classificar Dados", "Funcionalidade ainda não implementada.")
+        #if considerar_descricao_bancaria: #parametrizado
+            #messagebox.showinfo("Classificar Dados", "Funcionalidade ainda não implementada.")
 
         df_descricoes_normalizadas = self.df_banco_dados['Descricao'].apply(
             lambda x: unidecode(str(x).strip().upper())
@@ -430,252 +374,11 @@ class ImportadorExtratos:
                 novos_valores[9] = credito  # atualizar a coluna de credito
                 self.tree.item(item, values=novos_valores)
 
-        messagebox.askyesno("Classificar Dados", "Deseja classificar contra-partida?")
         messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
-
-
-
-
-
-
-
         
     def executar_acao_para_banco(self, nome_banco, arquivo, respostas_safra=None):
         def acao_brasil(arquivo):
-            print("\n=== INÍCIO DO PROCESSAMENTO ===")
-            print(f"Arquivo recebido: {arquivo}")
-            try:
-                extensao = arquivo.lower().split('.')[-1]
-                print(f"Extensão detectada: {extensao}")
-                dados_importados = []
-                saldo_final_calculado = 0  # Inicializa a variável aqui
-                
-                if extensao == 'xls':
-                    print("\n=== PROCESSANDO ARQUIVO XLS ===")
-                    import xlrd
-                    
-                    print("Abrindo workbook...")
-                    wb = xlrd.open_workbook(arquivo)
-                    sheet = wb.sheet_by_index(0)
-                    print(f"Planilha aberta: {sheet.name}")
-                    print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
-                    
-                    # Lê o saldo inicial
-                    print("\nBuscando saldo inicial...")
-                    saldo_inicial = sheet.cell_value(3, 8)
-                    print(f"Valor bruto encontrado em I4: {saldo_inicial}")
-                    print(f"Tipo do valor: {type(saldo_inicial)}")
-                    
-                    # Formata e confirma saldo inicial
-                    if isinstance(saldo_inicial, str):
-                        print("Convertendo saldo inicial de string para float...")
-                        saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", "."))
-                    saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                    print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
-                    
-                    resposta = messagebox.askyesno("Confirmação de saldo", 
-                                                 f"O saldo inicial é de R${saldo_inicial_frmt}?")
-                    if not resposta:
-                        print("Usuário não confirmou o saldo inicial. Abortando...")
-                        return
-                        
-                    print("Atualizando campo de saldo inicial na interface...")
-                    self.saldo_inicial_entry.delete(0, tk.END)
-                    self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
-                    
-                    # Processa as linhas
-                    saldo_final_calculado = saldo_inicial
-                    
-                    print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
-                    print(f"Total de linhas na planilha: {sheet.nrows}")
-                    
-                    for row in range(5, sheet.nrows):
-                        try:
-                            print(f"\nProcessando linha {row+1}:")
-                            data = sheet.cell_value(row, 0)
-                            print(f"Data encontrada: {data} (tipo: {type(data)})")
-                            
-                            if not data:
-                                print("Linha vazia, pulando...")
-                                continue
-                            if isinstance(data, str) and "saldo" in data.lower():
-                                print("Encontrada linha de saldo, parando processamento...")
-                                break
-                                
-                            historico = sheet.cell_value(row, 7)
-                            num_doc = sheet.cell_value(row, 5)
-                            credito = sheet.cell_value(row, 15)
-                            debito = sheet.cell_value(row, 16)
-                            saldo = sheet.cell_value(row, 8)
-                            
-                            print(f"Valores lidos:")
-                            print(f"  Histórico: {historico}")
-                            print(f"  Nº Doc: {num_doc}")
-                            print(f"  Crédito: {credito}")
-                            print(f"  Débito: {debito}")
-                            print(f"  Saldo: {saldo}")
-                            
-                            def tratar_valor(valor):
-                                print(f"Tratando valor: {valor} (tipo: {type(valor)})")
-                                if valor is None or valor == "":
-                                    print("Valor vazio, retornando 0.0")
-                                    return 0.0
-                                if isinstance(valor, str):
-                                    print("Convertendo string para float...")
-                                    valor = valor.replace(".", "").replace(",", ".")
-                                try:
-                                    resultado = float(valor)
-                                    print(f"Valor convertido: {resultado}")
-                                    return resultado
-                                except ValueError as e:
-                                    print(f"Erro ao converter valor: {e}")
-                                    return 0.0
-                            
-                            valor_credito = tratar_valor(credito)
-                            valor_debito = tratar_valor(debito)
-                            valor_total = valor_credito + valor_debito
-                            print(f"Valor total calculado: {valor_total}")
-                            
-                            # Formata a data se for um número
-                            if isinstance(data, float):
-                                print("Convertendo data de float para string...")
-                                data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
-                                print(f"Data convertida: {data}")
-                            
-                            print("Adicionando linha aos dados importados...")
-                            dados_importados.append([
-                                data, historico, num_doc, valor_total, saldo,
-                                "", "", "", "", "", "", "", "", ""
-                            ])
-                            
-                            saldo_final_calculado += valor_total
-                            print(f"Novo saldo calculado: {saldo_final_calculado}")
-                            
-                        except Exception as e:
-                            print(f"ERRO ao processar linha {row+1}:")
-                            print(f"Detalhes do erro: {str(e)}")
-                            traceback.print_exc()
-                            continue
-                    
-                else:  # xlsx
-                    print("\n=== PROCESSANDO ARQUIVO XLSX ===")
-                    wb = openpyxl.load_workbook(arquivo, data_only=True)
-                    sheet = wb.active
-                    print(f"Planilha ativa: {sheet.title}")
-                    
-                    # Lê o saldo inicial
-                    print("\nBuscando saldo inicial...")
-                    saldo_inicial_celula = sheet['I4'].value
-                    print(f"Valor bruto encontrado em I4: {saldo_inicial_celula}")
-                    
-                    if isinstance(saldo_inicial_celula, str):
-                        saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
-                    else:
-                        saldo_inicial = float(saldo_inicial_celula)
-                        
-                    saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                    print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
-                    
-                    resposta = messagebox.askyesno("Confirmação de saldo", 
-                                                 f"O saldo inicial é de R${saldo_inicial_frmt}?")
-                    if not resposta:
-                        print("Usuário não confirmou o saldo inicial. Abortando...")
-                        return
-                        
-                    self.saldo_inicial_entry.delete(0, tk.END)
-                    self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
-                    
-                    # Inicializa o saldo final calculado com o saldo inicial
-                    saldo_final_calculado = saldo_inicial
-                    
-                    print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
-                    for row in range(5, sheet.max_row + 1):
-                        try:
-                            print(f"\nProcessando linha {row}:")
-                            data = sheet.cell(row=row, column=1).value
-                            print(f"Data encontrada: {data}")
-                            
-                            if not data:
-                                print("Linha vazia, pulando...")
-                                continue
-                            if isinstance(data, str) and "total" in data.lower():
-                                print("Encontrada linha de total, parando processamento...")
-                                break
-                                
-                            historico = sheet.cell(row=row, column=8).value
-                            num_doc = sheet.cell(row=row, column=5).value
-                            credito = sheet.cell(row=row, column=15).value
-                            debito = sheet.cell(row=row, column=16).value
-                            saldo = sheet.cell(row=row, column=9).value
-                            
-                            print(f"Valores lidos:")
-                            print(f"  Histórico: {historico}")
-                            print(f"  Nº Doc: {num_doc}")
-                            print(f"  Crédito: {credito}")
-                            print(f"  Débito: {debito}")
-                            print(f"  Saldo: {saldo}")
-                            
-                            def tratar_valor(valor):
-                                if valor is None or valor == "":
-                                    return 0.0
-                                if isinstance(valor, str):
-                                    valor = valor.replace(".", "").replace(",", ".")
-                                try:
-                                    return float(valor)
-                                except ValueError:
-                                    return 0.0
-                            
-                            valor_credito = tratar_valor(credito)
-                            valor_debito = tratar_valor(debito)
-                            valor_total = valor_credito + valor_debito
-                            print(f"Valor total calculado: {valor_total}")
-                            
-                            dados_importados.append([
-                                data, historico, num_doc, valor_total, saldo,
-                                "", "", "", "", "", "", "", "", ""
-                            ])
-                            
-                            saldo_final_calculado += valor_total
-                            print(f"Novo saldo calculado: {saldo_final_calculado}")
-                            
-                        except Exception as e:
-                            print(f"ERRO ao processar linha {row}:")
-                            print(f"Detalhes do erro: {str(e)}")
-                            continue
-                
-                print("\n=== ATUALIZANDO INTERFACE ===")
-                print("Formatando saldo final...")
-                saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
-                print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
-                
-                print("Atualizando campo de saldo final...")
-                self.saldo_final_calculado_entry.delete(0, tk.END)
-                self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
-                
-                print("\nLimpando Treeview...")
-                for i in self.tree.get_children():
-                    self.tree.delete(i)
-                    
-                print("Inserindo dados na Treeview...")
-                print(f"Total de registros a inserir: {len(dados_importados)}")
-                for dados in dados_importados:
-                    self.tree.insert("", "end", values=dados)
-                    
-                print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
-                print(f"Total de linhas processadas: {len(dados_importados)}")
-                
-            except Exception as e:
-                print("\n=== ERRO FATAL ===")
-                print(f"Erro: {str(e)}")
-                print("Stack trace:")
-                traceback.print_exc()
-                messagebox.showerror("Erro", 
-                    "Erro ao processar o arquivo. Verifique se:\n\n" +
-                    "1. O arquivo está no formato correto\n" +
-                    "2. O arquivo não está em modo de exibição protegida\n" +
-                    "3. O arquivo está fechado no Excel\n\n" +
-                    f"Erro: {str(e)}")
-                return
+            print("Executando ação específica para o Banco do Brasil.")
 
         def acao_inter(arquivo):
             print("Executando ação específica para o Inter.")
@@ -949,8 +652,6 @@ class ImportadorExtratos:
         def acao_sicredi(arquivo):
             print("Executando ação específica para o Sicredi.")
 
-
-
         acoes = {
             "Bco.Brasil": acao_brasil, "Banco do Brasil": acao_brasil, "BANCO DO BRASIL": acao_brasil, "BB": acao_brasil, "BRASIL": acao_brasil, "Brasil": acao_brasil,
             "Bco.Inter": acao_inter, "Banco Inter": acao_inter, "BANCO INTER": acao_inter, "Inter": acao_inter, "INTER": acao_inter,
@@ -1048,13 +749,6 @@ class ImportadorExtratos:
         if hasattr(self, 'tela_selecao_conta') and self.tela_selecao_conta.winfo_exists():
             self.tela_selecao_conta.root.destroy()
         self.root.destroy()
-
-
-
-        
-
-
-
 
 class TelaSelecaoConta:
     def __init__(self, root, callback):
@@ -1238,9 +932,6 @@ class TelaSelecaoConta:
     def alterar_conta(self):
         messagebox.showinfo("Alterar Conta", "Funcionalidade de Alterar Conta ainda não implementada.")
         self.root.lift()
-
-
-
         
 class TelaNovaConta:
     def __init__(self, root, callback):
@@ -1314,10 +1005,6 @@ class TelaNovaConta:
     def cancelar(self):
         self.root.destroy()
 
-
-
-
-
 class TelaNovaEmpresa:
     def __init__(self, root, callback):
         self.root = root
@@ -1361,8 +1048,5 @@ class TelaNovaEmpresa:
     def cancelar(self):
         self.root.destroy()
 
-
 if __name__ == "__main__":
-    login_root = tk.Tk()
-    login_app = SenhaLogin(login_root, open_main_window)
-    login_root.mainloop()
+    open_main_window()
