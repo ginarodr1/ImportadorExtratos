@@ -31,6 +31,7 @@ class ImportadorExtratos:
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
         csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\lancamentoscontas1.csv"
         self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
+        self.tree.tag_configure('negativo', foregroung='red')
 
         for i in range(6):
             root.grid_columnconfigure(i, weight=0)
@@ -386,20 +387,24 @@ class ImportadorExtratos:
         self.copiar_coluna("ValorLEB", "ValorLC")
         self.copiar_coluna("LancamentoLC", "HistoricoLC")
 
+        for item in self.tree.get_children():
+            values = self.tree.item(item, 'values')
+            valor_idx = self.tree["columns"].index("ValorLEB")
+            valor = values[valor_idx]
+            if valor and float(valor) < 0:
+                self.tree.item(item, tags=('negativo',))
+
+
         messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
 
-
-
-
-
-
-
-        
     def executar_acao_para_banco(self, nome_banco, arquivo, respostas_safra=None):
         print(f"Banco detectado: {nome_banco}")
         acoes = {
             "Bco.Bradesco": self.acao_bradesco, "Banco Bradesco": self.acao_bradesco, "BANCO BRADESCO": self.acao_bradesco, "Bradesco": self.acao_bradesco, "EXTRATO BRADESCO": self.acao_bradesco,
             "Bco.Safra": self.acao_safra, "Banco Safra": self.acao_safra, "BANCO SAFRA": self.acao_safra, "SAFRA": self.acao_safra, "Safra": self.acao_safra, "EXTRATO SAFRA": self.acao_safra,
+            "Bco.Daycoval": self.acao_daycoval, "Banco Daycoval": self.acao_daycoval, "BANCO DAYCOVAL": self.acao_daycoval, "DAYCOVAL": self.acao_daycoval, "Daycoval": self.acao_daycoval, "EXTRATO DAYCOVAL": self.acao_daycoval,
+            "Bco.Itaú": self.acao_itau, "Banco Itaú": self.acao_itau, "BANCO ITAÚ": self.acao_itau, "ITAÚ": self.acao_itau, "Itaú": self.acao_itau, "EXTRATO ITAU": self.acao_itau, "EXTRATO ITAÚ": self.acao_itau,
+            "Bco.Brasil": self.acao_brasil, "Banco do Brasil": self.acao_brasil, "BANCO DO BRASIL": self.acao_brasil, "BB": self.acao_brasil, "BRASIL": self.acao_brasil, "Brasil": self.acao_brasil, "EXTRATO BB": self.acao_brasil,
         }
 
         print(f"Chaves disponíveis: {list(acoes.keys())}")
@@ -414,7 +419,7 @@ class ImportadorExtratos:
             print(f"Executando ação padrão para {nome_banco}.")
 
     def acao_bradesco(self, arquivo):
-            print("\n=== INÍCIO DO PROCESSAMENTO ===")
+            print("\n=== INÍCIO DO PROCESSAMENTO: BANCO BRADESCO ===")
             print(f"Arquivo recebido: {arquivo}")
             try:
                 extensao = arquivo.lower().split('.')[-1]
@@ -632,6 +637,12 @@ class ImportadorExtratos:
                 print(f"Total de registros a inserir: {len(dados_importados)}")
                 for dados in dados_importados:
                     self.tree.insert("", "end", values=dados)
+                    for item in self.tree.get_children():
+                        values = self.tree.item(item, 'values')
+                        valor_idx = self.tree["columns"].index("ValorLEB")
+                        valor = values[valor_idx]
+                        if valor and float(valor) < 0:
+                            self.tree.item(item, tags=('negativo',))
                     
                 print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                 print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -648,12 +659,6 @@ class ImportadorExtratos:
                     "3. O arquivo está fechado no Excel\n\n" +
                     f"Erro: {str(e)}")
                 return
-
-
-
-
-
-
 
     def acao_safra(self, arquivo, respostas_safra):
         print("\n=== INÍCIO DO PROCESSAMENTO: SAFRA ===")
@@ -851,6 +856,7 @@ class ImportadorExtratos:
                     
                             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                             print(f"Total de linhas processadas: {len(dados_importados)}")
+                
 
                         except Exception as e:
                             print("\n=== ERRO FATAL ===")
@@ -1021,10 +1027,8 @@ class ImportadorExtratos:
 
 
 
-
                 else: #! LÓGICA PARA ARQUIVO XLS/XLSX, FORMATO ANTIGO
                     print("Processando XLS/XLSX, formato antigo do Safra")
-
 
             elif extensao == "pdf":
                 if novo_formato:
@@ -1045,6 +1049,55 @@ class ImportadorExtratos:
         else:
             print("Nenhuma resposta específica fornecida para Safra.")
 
+    def acao_daycoval(self, arquivo):
+        print("\n=== INÍCIO DO PROCESSAMENTO: DAYCOVAL ===")
+        print(f"Arquivo Recebido: {arquivo}")
+        try:
+            extensao = arquivo.lower().split('.')[-1]
+            print(f"Extensão detectada: {extensao}")
+            dados_importados = []
+            saldo_final_calculado = 0
+
+            if extensao == 'xls':
+                print("\n=== PROCESSANDO ARQUIVO XLS ===")
+
+                print("Abringo workbook...")
+                wb = xlrd.open_workbook(arquivo)
+                sheet = wb.sheet_by_index(0)
+                print(f"Planilha aberta: {sheet.name}")
+                print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
+
+                print("\nBuscando saldo inicial...")
+                saldo_inicial = sheet.cell_value(9, 5)
+                print(f"Valor bruto encontrado em F10: {saldo_inicial}")
+                print(f"Tipo do valor: {type(saldo_inicial)}")
+
+        
+
+            else:  #! xlsx
+                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+
+        except Exception as e:
+            print("\n=== ERRO FATAL ===")
+            print(f"Erro: {str(e)}")
+            print("Stack trace:")
+            traceback.print_exc()
+            messagebox.showerror("Erro", 
+                "Erro ao processar o arquivo. Verifique se:\n\n" +
+                "1. O arquivo está no formato correto\n" +
+                "2. O arquivo não está em modo de exibição protegida\n" +
+                "3. O arquivo está fechado no Excel\n\n" +
+                f"Erro: {str(e)}")
+            return
+
+
+    def acao_itau(self, arquivo):
+        print("\n=== INÍCIO DO PROCESSAMENTO: ITAÚ ===")
+        print(f"Arquivo Recebido: {arquivo}")
+
+    def acao_brasil(self, arquivo):
+        print("\n=== INÍCIO DO PROCESSAMENTO: BANCO DO BRASIL ===")
+        print(f"Arquivo Recebido: {arquivo}")
 
     def confirmar_limpar_dados(self):
         resposta = messagebox.askyesno("Atenção", "Tem certeza que deseja limpar todos os dados?")
@@ -1121,6 +1174,13 @@ class ImportadorExtratos:
         if hasattr(self, 'tela_selecao_conta') and self.tela_selecao_conta.winfo_exists():
             self.tela_selecao_conta.root.destroy()
         self.root.destroy()
+
+
+
+        
+
+
+
 
 class TelaSelecaoConta:
     def __init__(self, root, callback):
@@ -1303,6 +1363,9 @@ class TelaSelecaoConta:
     def alterar_conta(self):
         messagebox.showinfo("Alterar Conta", "Funcionalidade de Alterar Conta ainda não implementada.")
         self.root.lift()
+
+
+
         
 class TelaNovaConta:
     def __init__(self, root, callback):
@@ -1375,6 +1438,10 @@ class TelaNovaConta:
 
     def cancelar(self):
         self.root.destroy()
+
+
+
+
 
 class TelaNovaEmpresa:
     def __init__(self, root, callback):
