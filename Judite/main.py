@@ -133,44 +133,57 @@ class ImportadorExtratos:
         self.linhadeajuda_label.grid(row=1, column=5)
 
         #* -------------------- TREEVIEW PARA EXIBIR OS DADOS IMPORTADOS -------------------- #
-        self.tree = ttk.Treeview(root, columns=(
-            "DataLEB", "DescriçãoLEB", "NDocLEB", "ValorLEB", "SaldoLEB",
-            "LancamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
-            "C-C/CLC", "CNPJLC", "HistóricoLC", "ValorLC"
+        self.frame_tree = tk.Frame(root)
+        self.frame_tree.grid(row=7, column=0, columnspan=6, pady=5, padx=10, sticky="nsew")
+
+        # Crie a Treeview dentro do frame
+        self.tree = ttk.Treeview(self.frame_tree, columns=(
+            "DataLEB", "DescricaoLEB", "NDocLEB", "ValorLEB", "SaldoLEB",
+            "LancamentoLC", "DataLC", "DebitoLC", "D-C/CLC", "CreditoLC",
+            "C-C/CLC", "CNPJLC", "HistoricoLC", "ValorLC"
         ), show="headings")
+
+        # Crie a Scrollbar vertical
+        self.scrollbar_y = ttk.Scrollbar(self.frame_tree, orient="vertical", command=self.tree.yview)
+        self.scrollbar_y.pack(side="right", fill="y")
+
+        # Configure a Treeview para usar a Scrollbar
+        self.tree.configure(yscrollcommand=self.scrollbar_y.set)
+
+        # Empacote a Treeview
+        self.tree.pack(side="left", fill="both", expand=True)
 
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
-        self.tree.heading("DescriçãoLEB", text="Descrição")
+        self.tree.heading("DescricaoLEB", text="Descrição")
         self.tree.heading("NDocLEB", text="N° Doc")
         self.tree.heading("ValorLEB", text="Valor")
         self.tree.heading("SaldoLEB", text="Saldo")
         self.tree.heading("LancamentoLC", text="Lançamento")
         self.tree.heading("DataLC", text="Data")
-        self.tree.heading("DébitoLC", text="Débito")
+        self.tree.heading("DebitoLC", text="Débito")
         self.tree.heading("D-C/CLC", text="D-C/C")
-        self.tree.heading("CréditoLC", text="Crédito")
+        self.tree.heading("CreditoLC", text="Crédito")
         self.tree.heading("C-C/CLC", text="C-C/C")
         self.tree.heading("CNPJLC", text="CNPJ")
-        self.tree.heading("HistóricoLC", text="Histórico")
+        self.tree.heading("HistoricoLC", text="Histórico")
         self.tree.heading("ValorLC", text="Valor")
 
         #* -------------------- AJUSTAR O TAMANHO DAS COLUNAS -------------------- #
         self.tree.column("DataLEB", width=60)
-        self.tree.column("DescriçãoLEB", width=150)
+        self.tree.column("DescricaoLEB", width=150)
         self.tree.column("NDocLEB", width=60)
         self.tree.column("ValorLEB", width=60)
         self.tree.column("SaldoLEB", width=60)
         self.tree.column("LancamentoLC", width=150)
         self.tree.column("DataLC", width=60)
-        self.tree.column("DébitoLC", width=60)
+        self.tree.column("DebitoLC", width=60)
         self.tree.column("D-C/CLC", width=50)
-        self.tree.column("CréditoLC", width=60)
+        self.tree.column("CreditoLC", width=60)
         self.tree.column("C-C/CLC", width=50)
         self.tree.column("CNPJLC", width=80)
-        self.tree.column("HistóricoLC", width=100)
+        self.tree.column("HistoricoLC", width=100)
         self.tree.column("ValorLC", width=80)
-        self.tree.grid(row=7, column=0, columnspan=6, pady=5, padx=10, sticky="nsew")
 
         #* -------------------- TORNAR A TREEVIEW EXPANSÍVEL -------------------- #
         root.grid_rowconfigure(7, weight=1)
@@ -205,7 +218,6 @@ class ImportadorExtratos:
         self.root.destroy() #? fecha a janela principal
 
     def abrir_explorador_arquivos(self, empresa, conta, arquivo, respostas_safra=None):
-        print(f"Empresa: {empresa}, Conta: {conta}, Arquivo: {arquivo}, Respostas Safra: {respostas_safra}")
         self.empresa_entry.delete(0, tk.END)
         self.empresa_entry.insert(0, empresa.split(" - ")[0])
         self.conta_entry.delete(0, tk.END)
@@ -219,9 +231,6 @@ class ImportadorExtratos:
         self.agencia_conta_entry.insert(0, f"{agencia}/{conta_bancaria}")
 
         self.detectar_banco(arquivo, respostas_safra)
-
-        if respostas_safra and respostas_safra.get("banco") == "Safra":
-            self.executar_acao_para_banco("Safra", arquivo, respostas_safra)
 
     def detectar_banco(self, nome_arquivo, respostas_safra=None):
         bancos = [
@@ -255,13 +264,142 @@ class ImportadorExtratos:
 
             valor_origem = values[self.tree["columns"].index(coluna_origem)]
             self.tree.set(item, coluna_destino, valor_origem)
+
+
+        #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
+    def classificar_dados(self):
+        conta_bancaria = self.conta_entry.get()
+        incluir_banco = messagebox.askyesno("Classificar Dados", "Deseja incluir a identificação do banco no histórico contábil?")
+        
+        
+
+        # Carregar contas.csv para obter a conta ativo
+        conta_ativo = None
+        try:
+            if os.path.exists('contas.csv'):
+                df_contas = pd.read_csv('contas.csv')
+                filtro = (df_contas['Empresa'] == self.empresa_entry.get()) & (df_contas['Banco'] == self.banco_entry.get())
+                conta_encontrada = df_contas[filtro]
+                if not conta_encontrada.empty:
+                    conta_ativo = str(conta_encontrada.iloc[0]['Conta Ativo']).strip()
+                    print(f"Conta ativo encontrada: {conta_ativo}")
+        except Exception as e:
+            print(f"Erro ao carregar contas.csv: {e}")
+
+        # Dicionário de padrões de lançamentos
+        padroes_lancamentos = {
+            "TRANSF CC PARA CC PJ": "TRANSF CC PARA CC PJ",
+            "TED-TRANSF ELET DISPON REMET.": "TED-TRANSF ELET DISPON REMET.",
+            "TRANSFERENCIA PIX REM:": "TRANSFERENCIA PIX REM:",
+            "TRANSFERENCIA PIX DES:": "TRANSFERENCIA PIX DES:",
+            "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS": "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS",
+            "ENCARGOS C GARANTIA ENCARGO": "ENCARGOS C GARANTIA ENCARGO",
+            "ENCARGOS C GARANTIDA ENCARGO CONTR": "ENCARGOS C GARANTIDA ENCARGO", 
+            "ENCARGOS C GARANTIDA IOF     CONTR": "ENCARGOS C GARANTIDA IOF",
+            "TARIFA REGISTRO COBRANCA": "TARIFA REGISTRO COBRANCA",
+            "PAGTO ELETRON  COBRANCA": "PAGTO ELETRON  COBRANCA",
+            "VISA CREDITO": "VISA CREDITO",
+            "RECEBIMENTO FORNECEDOR": "RECEBIMENTO FORNECEDOR",
+            "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET": "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET",
+            "OPERACAO CAPITAL GIRO": "OPERACAO CAPITAL GIRO",
+            "PARCELA OPER CREDITO CONTR": "PARCELA OPER CREDITO CONTR",
+            "PAGTO ELETRONICO TRIBUTO INTERNET": "PAGTO ELETRONICO TRIBUTO INTERNET",
+            "TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO": "TAR",
+            "TED D CC HBANK* DEST. SHOCK METAIS NAO FER": "TED D CC HBANK* DEST. SHOCK METAIS NAO FER",
+            "TAR PACOTE MENSAL BASICO": "Tarifa Bancária",
+            "RECEBIMENTO TED D REMET.SHOCK METAIS N FERRO": "RECEBIMENTO TED D REMET.SHOCK METAIS N FERRO",
+            "TRANSF.EXCEDENTEGARANTIA": "TRANSF.EXCEDENTEGARANTIA",
+            "PARCELA OPER CREDITO CONTR": "PARCELA OPER CREDITO CONTR",
+            "PIX QR CODE DINAMICO DES:": "PIX QR CODE DINAMICO",
+            "TARIFA BANCARIA TRANSF PGTO PIX": "TARIFA BANCARIA",
+            "PAGTO ELETRON COBRANCA CONTR": "PAGTO ELETRON COBRANCA",
+            "PAGTO ELETRON COBRANCA": "PAGTO ELETRON COBRANCA",
+            "TAR COMANDADA COBRANCA": "Tarifa Bancária"
+        }
+
+        # Processar cada item na Treeview
+        for item in self.tree.get_children(): # copiar e simplificar descrições
+            values = list(self.tree.item(item, 'values'))
+            descricao = values[self.tree["columns"].index("DescricaoLEB")]
+            
+            lancamento_simplificado = descricao # procurar por padrões conhecidos
+
+            if descricao.startswith("TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO"):
+                lancamento_simplificado = "TAR"
+            else:
+                for padrao in padroes_lancamentos:
+                    if descricao.startswith(padrao):
+                        lancamento_simplificado = padroes_lancamentos[padrao]
+                        break
+            
+            lancamento_idx = self.tree["columns"].index("LancamentoLC") # atualizar o lançamento
+            values[lancamento_idx] = lancamento_simplificado
+            
+            if incluir_banco: # adicionar identificação do banco se solicitado
+                banco_nome = self.banco_entry.get()
+                agencia_conta = self.agencia_conta_entry.get()
+                agencia_nome = agencia_conta.split('/')[0]
+                conta_nome = agencia_conta.split('/')[1]
+                
+                if values[lancamento_idx]:  # verifica se o lançamento não está vazio
+                    values[lancamento_idx] = f"{values[lancamento_idx]} - Bco.{banco_nome} Ag.{agencia_nome} CC.{conta_nome}"
+            
+            self.tree.item(item, values=values)
+
+        df_descricoes_normalizadas = self.df_banco_dados['Descricao'].apply(
+            lambda x: unidecode(str(x).strip().upper())
+        )
+
+        # Iterar sobre os itens na Treeview para classificar débito e crédito
+        for item in self.tree.get_children():
+            values = self.tree.item(item, 'values')
+            descricao_idx = self.tree["columns"].index("LancamentoLC")
+            descricao = values[descricao_idx]  # a descricao está na segunda coluna
+
+            descricao_normalizada = unidecode(str(descricao).strip().upper())
+
+            correspondencia = self.df_banco_dados[
+                df_descricoes_normalizadas == descricao_normalizada
+            ]
+
+            # procura a descrição e o tipo no banco
+            #correspondencia = self.df_banco_dados[self.df_banco_dados['Descricao'] == descricao]
+
+            if not correspondencia.empty:
+                # Obter os valores correspondentes usando índices
+                descricao_banco = correspondencia.iloc[0, 5]  # coluna F (descricao) no banco
+                debito = correspondencia.iloc[0, 6]  # coluna G (debito) no banco
+                credito = correspondencia.iloc[0, 9]  # coluna J (credito) no banco
+
+                if "#BCO" in str(debito):
+                    debito = conta_bancaria
+                if "#BCO" in str(credito):
+                    credito = conta_bancaria
+
+                # atualizar apenas as colunas relevantes
+                novos_valores = list(values)  # copiar os valores existentes
+                novos_valores[7] = debito  # atualizar a coluna de debito
+                novos_valores[9] = credito  # atualizar a coluna de credito
+                self.tree.item(item, values=novos_valores)
+
+        self.copiar_coluna("DataLEB", "DataLC")
+        self.copiar_coluna("ValorLEB", "ValorLC")
+        self.copiar_coluna("LancamentoLC", "HistoricoLC")
+
+        messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
+
+
+
+
+
+
+
         
     def executar_acao_para_banco(self, nome_banco, arquivo, respostas_safra=None):
         print(f"Banco detectado: {nome_banco}")
         acoes = {
             "Bco.Bradesco": self.acao_bradesco, "Banco Bradesco": self.acao_bradesco, "BANCO BRADESCO": self.acao_bradesco, "Bradesco": self.acao_bradesco, "EXTRATO BRADESCO": self.acao_bradesco,
             "Bco.Safra": self.acao_safra, "Banco Safra": self.acao_safra, "BANCO SAFRA": self.acao_safra, "SAFRA": self.acao_safra, "Safra": self.acao_safra, "EXTRATO SAFRA": self.acao_safra,
-            "Bco.Brasil": self.acao_brasil, "Banco do Brasil": self.acao_brasil, "BANCO DO BRASIL": self.acao_brasil, "BB": self.acao_brasil, "BRASIL": self.acao_brasil, "Brasil": self.acao_brasil, "EXTRATO BB": self.acao_brasil,
         }
 
         print(f"Chaves disponíveis: {list(acoes.keys())}")
@@ -275,471 +413,247 @@ class ImportadorExtratos:
         else:
             print(f"Executando ação padrão para {nome_banco}.")
 
-    def acao_brasil(self, arquivo):
-        print("\n=== INÍCIO DO PROCESSAMENTO: BANCO DO BRASIL ===")
-        print(f"Arquivo recebido: {arquivo}")
-        try:
-            extensao = arquivo.lower().split('.')[-1]
-            print(f"Extensão detectada: {extensao}")
-            dados_importados = []
-            saldo_final_calculado = 0.0  # Inicializa a variável aqui
- 
-            if extensao == 'xls':
-                print("\n=== PROCESSANDO ARQUIVO XLS ===")
-# 
-                # print("Abrindo workbook...")
-                # wb = xlrd.open_workbook(arquivo)
-                # sheet = wb.sheet_by_index(0)
-                # print(f"Planilha aberta: {sheet.name}")
-                # print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
-# 
-                # print("\nBuscando saldo inicial...")
-                # saldo_inicial = sheet.cell_value(9,5)
-                # print(f"Valor bruto encontrado em I4: {saldo_inicial}")
-                # print(f"Tipo do valor: {type(saldo_inicial)}")
-
-                # if isinstance(saldo_inicial, str):
-                    # print("Convertendo saldo inicial de string para float...")
-                    # saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", ""))
-                # saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                # print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
-# 
-                # resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
-
-                # if not resposta:
-                    # print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
-                    # saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
-                    # if saldo_inicial_manual:
-                        # try:
-                            # saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
-                            # saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                        # except ValueError:
-                            # messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
-                            # return
-                    # else:
-                        # messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
-                        # return
-                    
-                # print("Atualizando campo de saldo inicial na interface...")
-                # self.saldo_inicial_entry.delete(0, tk.END)
-                # self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
-
-                # saldo_final_calculado = saldo_inicial
-
-                # print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
-                # print(f"Total de linhas na planilha: {sheet.nrows}")
-
-                # for row in range(10, sheet.nrows):
-                    # try:
-                        # print(f"\nProcessando linha {row+1}:")
-                        # data = sheet.cell_value(row, 0)
-                        # print(f"Data encontrada: {data} (tipo: {type(data)})")
-
-                        # historico = sheet.cell_value(row, 7)
-
-                        # if isinstance(historico, str) and "S A L D O" in historico.lower():
-                            # print("Encontrada linha de total, parando processamento...")
-                            # break
-
-            else:
-                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
-                wb = openpyxl.load_workbook(arquivo, data_only=True)
-                sheet = wb.active
-                print(f"Planilha ativa: {sheet.title}")
-
-                print("\nBuscando saldo inicial...")
-                saldo_inicial_celula = sheet['I4'].value
-                print(f"Valor bruto encontrado em I4: {saldo_inicial_celula}")
-
-                if isinstance(saldo_inicial_celula, str):
-                    saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
-                else:
-                    saldo_inicial = float(saldo_inicial_celula)
-
-                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
-
-                resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
-                if not resposta:
-                    print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
-                    saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
-                    if saldo_inicial_manual:
-                        try:
-                            saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
-                            saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                        except ValueError:
-                            messagebox.showerror("Erro", "Valor de saldo inicial Inválido.")
-                            return
-                    else:
-                        messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
-                        return
-                    
-                print("Atualizando campo de saldo inicial na interface...")
-                self.saldo_inicial_entry.delete(0, tk.END)
-                self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
-
-                saldo_final_calculado = saldo_inicial
-
-                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
-                for row in range(5, sheet.max_row + 1):
-                    try:
-                        print(f"\nProcessando linha {row}:")
-                        data = sheet.cell(row=row, column=1).value
-                        print(f"Data encontrada: {data}")
-
-                        #if isinstance(data, str) and "total" in data.lower():
-                            #print("Encontrada linha de total, parando processamento...")
-                            #break
-
-                        # print(f"Processando valores...")
-                        # valor_celula = sheet.cell(row=row, column=6).value
-                        # if valor_celula == "0,00":
-                            # print("Valor 0,00 encontrado, pulando linha...")
-                            # continue
-
-                        historico = sheet.cell(row=row, column=8).value
-                        num_doc = sheet.cell(row=row, column=6).value
-                        valor = sheet.cell(row=row, column=9).value
-
-                        cod_historico = sheet.cell(row=row, column=7)
-                        agencia_origem = sheet.cell(row=row, column=4)
-
-
-
-                        print(f"Valores lidos:")
-                        print(f"  Histórico: {historico}")
-                        print(f"  N° Doc: {num_doc}")
-                        print(f"  Valor: {valor}")
-
-                        if num_doc == "00000000000000000" and cod_historico == "999" and agencia_origem == "0000":
-                            print("Encontrada linha com condições específicas para parar o processamento.")
-                            break
-
-                        def tratar_valor(valor):
-                            if valor is None or valor == "":
-                                return 0.0
-                            if isinstance(valor, str):
-                                valor = valor.replace(".", "").replace(",", ".")
-                            try:
-                                return float(valor)
-                            except ValueError:
-                                return 0.0
-                            
-                        valor_total = valor
-                        print(f"Valor total calculado: {valor_total}")
-
-                        dados_importados.append([
-                            data, historico, num_doc, valor_total, valor,
-                            "", "", "", "", "", "", "", "", ""
-                        ])
-
-                        saldo_final_calculado += valor_total
-                        print(f"Novo saldo calculado: {saldo_final_calculado}")
-
-                    except Exception as e:
-                        print(f"ERRO ao processar linha {row}:")
-                        print(f"Detalhes do erro: {str(e)}")
-                        continue
-
-            print("\n=== ATUALIZANDO INTERFACE ===")
-            print("Formatando saldo final...")
-            saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
-            print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
-
-            print("Atualizando campo de saldo final...")
-            self.saldo_final_calculado_entry.delete(0, tk.END)
-            self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
-
-            print("\nLimpando Treeview...")
-            for i in self.tree.get_children():
-                self.tree.delete(i)
-
-            print("Inserindo dados na Treeeview...")
-            print(f"Total de registros a inserir: {len(dados_importados)}")
-            for dados in dados_importados:
-                self.tree.insert("", "end", values=dados)
-
-            print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
-            print(f"Total de linha processadas: {len(dados_importados)}")
-
-        except Exception as e:
-            print("\n=== ERRO FATAL ===")
-            print(f"Erro: {str(e)}")
-            print("stack trace:")
-            traceback.print_exc()
-            messagebox.showinfo("Erro",
-                                "Erro ao processar o arquivo. Verifique se:\n\n" +
-                                "1. O arquivo está no formato correto\n" +
-                                "2. O arquivo não está em modo de exibição protegida\n" +
-                                "3. O arquivo está fechado no Excel\n\n" +
-                                f"Erro: {str(e)}")
-            return
-
     def acao_bradesco(self, arquivo):
-        print("\n=== INÍCIO DO PROCESSAMENTO: BRADESCO ===")
-        print(f"Arquivo recebido: {arquivo}")
-        try:
-            extensao = arquivo.lower().split('.')[-1]
-            print(f"Extensão detectada: {extensao}")
-            dados_importados = []
-            saldo_final_calculado = 0  # Inicializa a variável aqui
+            print("\n=== INÍCIO DO PROCESSAMENTO ===")
+            print(f"Arquivo recebido: {arquivo}")
+            try:
+                extensao = arquivo.lower().split('.')[-1]
+                print(f"Extensão detectada: {extensao}")
+                dados_importados = []
+                saldo_final_calculado = 0  # Inicializa a variável aqui
                 
-            if extensao == 'xls':
-                print("\n=== PROCESSANDO ARQUIVO XLS ===")
-                import xlrd
+                if extensao == 'xls':
+                    print("\n=== PROCESSANDO ARQUIVO XLS ===")
+                    import xlrd
                     
-                print("Abrindo workbook...")
-                wb = xlrd.open_workbook(arquivo)
-                sheet = wb.sheet_by_index(0)
-                print(f"Planilha aberta: {sheet.name}")
-                print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
+                    print("Abrindo workbook...")
+                    wb = xlrd.open_workbook(arquivo)
+                    sheet = wb.sheet_by_index(0)
+                    print(f"Planilha aberta: {sheet.name}")
+                    print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
                     
                     # Lê o saldo inicial (F10)
-                print("\nBuscando saldo inicial...")
-                saldo_inicial = sheet.cell_value(9, 5)
-                print(f"Valor bruto encontrado em F10: {saldo_inicial}")
-                print(f"Tipo do valor: {type(saldo_inicial)}")
+                    print("\nBuscando saldo inicial...")
+                    saldo_inicial = sheet.cell_value(9, 5)
+                    print(f"Valor bruto encontrado em F10: {saldo_inicial}")
+                    print(f"Tipo do valor: {type(saldo_inicial)}")
                     
-                # Formata e confirma saldo inicial
-                if isinstance(saldo_inicial, str):
-                    print("Convertendo saldo inicial de string para float...")
-                    saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", "."))
-                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
+                    # Formata e confirma saldo inicial
+                    if isinstance(saldo_inicial, str):
+                        print("Convertendo saldo inicial de string para float...")
+                        saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", "."))
+                    saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                    print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
                     
-                resposta = messagebox.askyesno("Confirmação de saldo", 
+                    resposta = messagebox.askyesno("Confirmação de saldo", 
                                                  f"O saldo inicial é de R${saldo_inicial_frmt}?")
-                
-                if not resposta:
-                    print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
-                    saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
-                    if saldo_inicial_manual:
-                        try:
-                            saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
-                            saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                        except ValueError:
-                            messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
-                            return
-                    else:
-                        messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
+                    if not resposta:
+                        print("Usuário não confirmou o saldo inicial. Abortando...")
                         return
-
-                #if not resposta:
-                    #messagebox.showinfo("Aviso", "Funcionalidade de importação de PDF ainda não implementada.")
-                    #return
                         
-                print("Atualizando campo de saldo inicial na interface...")
-                self.saldo_inicial_entry.delete(0, tk.END)
-                self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
+                    print("Atualizando campo de saldo inicial na interface...")
+                    self.saldo_inicial_entry.delete(0, tk.END)
+                    self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
                     
                     # Processa as linhas
-                saldo_final_calculado = saldo_inicial
+                    saldo_final_calculado = saldo_inicial
                     
-                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
-                print(f"Total de linhas na planilha: {sheet.nrows}")
+                    print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
+                    print(f"Total de linhas na planilha: {sheet.nrows}")
                     
-                for row in range(10, sheet.nrows):
-                    try:
-                        print(f"\nProcessando linha {row+1}:")
-                        data = sheet.cell_value(row, 0)
-                        print(f"Data encontrada: {data} (tipo: {type(data)})")
+                    for row in range(10, sheet.nrows):
+                        try:
+                            print(f"\nProcessando linha {row+1}:")
+                            data = sheet.cell_value(row, 0)
+                            print(f"Data encontrada: {data} (tipo: {type(data)})")
                             
-                        if not data:
-                            print("Linha vazia, pulando...")
-                            continue
-                        if isinstance(data, str) and "total" in data.lower():
-                            print("Encontrada linha de total, parando processamento...")
-                            break
+                            if not data:
+                                print("Linha vazia, pulando...")
+                                continue
+                            if isinstance(data, str) and "total" in data.lower():
+                                print("Encontrada linha de total, parando processamento...")
+                                break
                                 
-                        historico = sheet.cell_value(row, 1)
-                        num_doc = sheet.cell_value(row, 2)
-                        credito = sheet.cell_value(row, 3)
-                        debito = sheet.cell_value(row, 4)
-                        saldo = sheet.cell_value(row, 5)
+                            historico = sheet.cell_value(row, 1)
+                            num_doc = sheet.cell_value(row, 2)
+                            credito = sheet.cell_value(row, 3)
+                            debito = sheet.cell_value(row, 4)
+                            saldo = sheet.cell_value(row, 5)
                             
-                        print(f"Valores lidos:")
-                        print(f"  Histórico: {historico}")
-                        print(f"  Nº Doc: {num_doc}")
-                        print(f"  Crédito: {credito}")
-                        print(f"  Débito: {debito}")
-                        print(f"  Saldo: {saldo}")
+                            print(f"Valores lidos:")
+                            print(f"  Histórico: {historico}")
+                            print(f"  Nº Doc: {num_doc}")
+                            print(f"  Crédito: {credito}")
+                            print(f"  Débito: {debito}")
+                            print(f"  Saldo: {saldo}")
                             
-                        def tratar_valor(valor):
-                            print(f"Tratando valor: {valor} (tipo: {type(valor)})")
-                            if valor is None or valor == "":
-                                print("Valor vazio, retornando 0.0")
-                                return 0.0
-                            if isinstance(valor, str):
-                                print("Convertendo string para float...")
-                                valor = valor.replace(".", "").replace(",", ".")
-                            try:
-                                resultado = float(valor)
-                                print(f"Valor convertido: {resultado}")
-                                return resultado
-                            except ValueError as e:
-                                print(f"Erro ao converter valor: {e}")
-                                return 0.0
+                            def tratar_valor(valor):
+                                print(f"Tratando valor: {valor} (tipo: {type(valor)})")
+                                if valor is None or valor == "":
+                                    print("Valor vazio, retornando 0.0")
+                                    return 0.0
+                                if isinstance(valor, str):
+                                    print("Convertendo string para float...")
+                                    valor = valor.replace(".", "").replace(",", ".")
+                                try:
+                                    resultado = float(valor)
+                                    print(f"Valor convertido: {resultado}")
+                                    return resultado
+                                except ValueError as e:
+                                    print(f"Erro ao converter valor: {e}")
+                                    return 0.0
                             
-                        valor_credito = tratar_valor(credito)
-                        valor_debito = tratar_valor(debito)
-                        valor_total = valor_credito + valor_debito
-                        print(f"Valor total calculado: {valor_total}")
+                            valor_credito = tratar_valor(credito)
+                            valor_debito = tratar_valor(debito)
+                            valor_total = valor_credito + valor_debito
+                            print(f"Valor total calculado: {valor_total}")
                             
                             # Formata a data se for um número
-                        if isinstance(data, float):
-                            print("Convertendo data de float para string...")
-                            data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
-                            print(f"Data convertida: {data}")
+                            if isinstance(data, float):
+                                print("Convertendo data de float para string...")
+                                data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
+                                print(f"Data convertida: {data}")
                             
-                        print("Adicionando linha aos dados importados...")
-                        dados_importados.append([
-                            data, historico, num_doc, valor_total, saldo,
-                            "", "", "", "", "", "", "", "", ""
-                        ])
+                            print("Adicionando linha aos dados importados...")
+                            dados_importados.append([
+                                data, historico, num_doc, valor_total, saldo,
+                                "", "", "", "", "", "", "", "", ""
+                            ])
                             
-                        saldo_final_calculado += valor_total
-                        print(f"Novo saldo calculado: {saldo_final_calculado}")
+                            saldo_final_calculado += valor_total
+                            print(f"Novo saldo calculado: {saldo_final_calculado}")
                             
-                    except Exception as e:
-                        print(f"ERRO ao processar linha {row+1}:")
-                        print(f"Detalhes do erro: {str(e)}")
-                        traceback.print_exc()
-                        continue
+                        except Exception as e:
+                            print(f"ERRO ao processar linha {row+1}:")
+                            print(f"Detalhes do erro: {str(e)}")
+                            traceback.print_exc()
+                            continue
                     
-            else:  # xlsx
-                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
-                wb = openpyxl.load_workbook(arquivo, data_only=True)
-                sheet = wb.active
-                print(f"Planilha ativa: {sheet.title}")
+                else:  # xlsx
+                    print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+                    wb = openpyxl.load_workbook(arquivo, data_only=True)
+                    sheet = wb.active
+                    print(f"Planilha ativa: {sheet.title}")
                     
                     # Lê o saldo inicial (F10)
-                print("\nBuscando saldo inicial...")
-                saldo_inicial_celula = sheet['F10'].value
-                print(f"Valor bruto encontrado em F10: {saldo_inicial_celula}")
+                    print("\nBuscando saldo inicial...")
+                    saldo_inicial_celula = sheet['F10'].value
+                    print(f"Valor bruto encontrado em F10: {saldo_inicial_celula}")
                     
-                if isinstance(saldo_inicial_celula, str):
-                    saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
-                else:
-                    saldo_inicial = float(saldo_inicial_celula)
-                        
-                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
-                    
-                resposta = messagebox.askyesno("Confirmação de saldo", 
-                                                 f"O saldo inicial é de R${saldo_inicial_frmt}?")
-                
-                if not resposta:
-                    print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
-                    saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
-                    if saldo_inicial_manual:
-                        try:
-                            saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
-                            saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
-                        except ValueError:
-                            messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
-                            return
+                    if isinstance(saldo_inicial_celula, str):
+                        saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
                     else:
-                        messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
-                        return
-
-                #if not resposta:
-                    #messagebox.showinfo("Aviso", "Funcionalidade de importação de PDF ainda não implementada.")
-                    #return
+                        saldo_inicial = float(saldo_inicial_celula)
                         
-                self.saldo_inicial_entry.delete(0, tk.END)
-                self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
+                    saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                    print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
+                    
+                    resposta = messagebox.askyesno("Confirmação de saldo", 
+                                                 f"O saldo inicial é de R${saldo_inicial_frmt}?")
+                    if not resposta:
+                        print("Usuário não confirmou o saldo inicial. Abortando...")
+                        return
+                        
+                    self.saldo_inicial_entry.delete(0, tk.END)
+                    self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
                     
                     # Inicializa o saldo final calculado com o saldo inicial
-                saldo_final_calculado = saldo_inicial
+                    saldo_final_calculado = saldo_inicial
                     
-                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
-                for row in range(11, sheet.max_row + 1):
-                    try:
-                        print(f"\nProcessando linha {row}:")
-                        data = sheet.cell(row=row, column=1).value
-                        print(f"Data encontrada: {data}")
+                    print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
+                    for row in range(11, sheet.max_row + 1):
+                        try:
+                            print(f"\nProcessando linha {row}:")
+                            data = sheet.cell(row=row, column=1).value
+                            print(f"Data encontrada: {data}")
                             
-                        if not data:
-                            print("Linha vazia, pulando...")
-                            continue
-                        if isinstance(data, str) and "total" in data.lower():
-                            print("Encontrada linha de total, parando processamento...")
-                            break
+                            if not data:
+                                print("Linha vazia, pulando...")
+                                continue
+                            if isinstance(data, str) and "total" in data.lower():
+                                print("Encontrada linha de total, parando processamento...")
+                                break
                                 
-                        historico = sheet.cell(row=row, column=2).value
-                        num_doc = sheet.cell(row=row, column=3).value
-                        credito = sheet.cell(row=row, column=4).value
-                        debito = sheet.cell(row=row, column=5).value
-                        saldo = sheet.cell(row=row, column=6).value
+                            historico = sheet.cell(row=row, column=2).value
+                            num_doc = sheet.cell(row=row, column=3).value
+                            credito = sheet.cell(row=row, column=4).value
+                            debito = sheet.cell(row=row, column=5).value
+                            saldo = sheet.cell(row=row, column=6).value
                             
-                        print(f"Valores lidos:")
-                        print(f"  Histórico: {historico}")
-                        print(f"  Nº Doc: {num_doc}")
-                        print(f"  Crédito: {credito}")
-                        print(f"  Débito: {debito}")
-                        print(f"  Saldo: {saldo}")
+                            print(f"Valores lidos:")
+                            print(f"  Histórico: {historico}")
+                            print(f"  Nº Doc: {num_doc}")
+                            print(f"  Crédito: {credito}")
+                            print(f"  Débito: {debito}")
+                            print(f"  Saldo: {saldo}")
                             
-                        def tratar_valor(valor):
-                            if valor is None or valor == "":
-                                return 0.0
-                            if isinstance(valor, str):
-                                valor = valor.replace(".", "").replace(",", ".")
-                            try:
-                                return float(valor)
-                            except ValueError:
-                                return 0.0
+                            def tratar_valor(valor):
+                                if valor is None or valor == "":
+                                    return 0.0
+                                if isinstance(valor, str):
+                                    valor = valor.replace(".", "").replace(",", ".")
+                                try:
+                                    return float(valor)
+                                except ValueError:
+                                    return 0.0
                             
-                        valor_credito = tratar_valor(credito)
-                        valor_debito = tratar_valor(debito)
-                        valor_total = valor_credito + valor_debito
-                        print(f"Valor total calculado: {valor_total}")
+                            valor_credito = tratar_valor(credito)
+                            valor_debito = tratar_valor(debito)
+                            valor_total = valor_credito + valor_debito
+                            print(f"Valor total calculado: {valor_total}")
                             
-                        dados_importados.append([
-                            data, historico, num_doc, valor_total, saldo,
-                            "", "", "", "", "", "", "", "", ""
-                        ])
+                            dados_importados.append([
+                                data, historico, num_doc, valor_total, saldo,
+                                "", "", "", "", "", "", "", "", ""
+                            ])
                             
-                        saldo_final_calculado += valor_total
-                        print(f"Novo saldo calculado: {saldo_final_calculado}")
+                            saldo_final_calculado += valor_total
+                            print(f"Novo saldo calculado: {saldo_final_calculado}")
                             
-                    except Exception as e:
-                        print(f"ERRO ao processar linha {row}:")
-                        print(f"Detalhes do erro: {str(e)}")
-                        continue
+                        except Exception as e:
+                            print(f"ERRO ao processar linha {row}:")
+                            print(f"Detalhes do erro: {str(e)}")
+                            continue
                 
-            print("\n=== ATUALIZANDO INTERFACE ===")
-            print("Formatando saldo final...")
-            saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
-            print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
+                print("\n=== ATUALIZANDO INTERFACE ===")
+                print("Formatando saldo final...")
+                saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+                print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
                 
-            print("Atualizando campo de saldo final...")
-            self.saldo_final_calculado_entry.delete(0, tk.END)
-            self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
+                print("Atualizando campo de saldo final...")
+                self.saldo_final_calculado_entry.delete(0, tk.END)
+                self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
                 
-            print("\nLimpando Treeview...")
-            for i in self.tree.get_children():
-                self.tree.delete(i)
+                print("\nLimpando Treeview...")
+                for i in self.tree.get_children():
+                    self.tree.delete(i)
                     
-            print("Inserindo dados na Treeview...")
-            print(f"Total de registros a inserir: {len(dados_importados)}")
-            for dados in dados_importados:
-                self.tree.insert("", "end", values=dados)
+                print("Inserindo dados na Treeview...")
+                print(f"Total de registros a inserir: {len(dados_importados)}")
+                for dados in dados_importados:
+                    self.tree.insert("", "end", values=dados)
                     
-            print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
-            print(f"Total de linhas processadas: {len(dados_importados)}")
+                print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
+                print(f"Total de linhas processadas: {len(dados_importados)}")
                 
-        except Exception as e:
-            print("\n=== ERRO FATAL ===")
-            print(f"Erro: {str(e)}")
-            print("Stack trace:")
-            traceback.print_exc()
-            messagebox.showerror("Erro", 
-                "Erro ao processar o arquivo. Verifique se:\n\n" +
-                "1. O arquivo está no formato correto\n" +
-                "2. O arquivo não está em modo de exibição protegida\n" +
-                "3. O arquivo está fechado no Excel\n\n" +
-                f"Erro: {str(e)}")
-            return
+            except Exception as e:
+                print("\n=== ERRO FATAL ===")
+                print(f"Erro: {str(e)}")
+                print("Stack trace:")
+                traceback.print_exc()
+                messagebox.showerror("Erro", 
+                    "Erro ao processar o arquivo. Verifique se:\n\n" +
+                    "1. O arquivo está no formato correto\n" +
+                    "2. O arquivo não está em modo de exibição protegida\n" +
+                    "3. O arquivo está fechado no Excel\n\n" +
+                    f"Erro: {str(e)}")
+                return
+
+
+
+
+
+
 
     def acao_safra(self, arquivo, respostas_safra):
         print("\n=== INÍCIO DO PROCESSAMENTO: SAFRA ===")
@@ -937,7 +851,6 @@ class ImportadorExtratos:
                     
                             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                             print(f"Total de linhas processadas: {len(dados_importados)}")
-                
 
                         except Exception as e:
                             print("\n=== ERRO FATAL ===")
@@ -955,6 +868,158 @@ class ImportadorExtratos:
 
                     else: #! LÓGICA PARA ARQUIVO XLS/XLSX, NOVO FORMATO E CONTA CORRENTE
                         print("Processando XLS/XLSX, novo formato do Safra, conta corrente.")
+                        try:
+                            dados_importados = []
+                            saldo_final_calculado = 0
+
+                            if extensao == "xls": #! SE O ARQUIVO É XLS
+                                print("\n=== PROCESSANDO ARQUIVO XLS ===")
+                                print("Abrindo workbook...")
+
+                            else: #! SE O ARQUIVO É XLSX
+                                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+                                wb = openpyxl.load_workbook(arquivo, data_only=True)
+                                sheet = wb.active
+                                print(f"Planilha ativa: {sheet.title}")
+
+                                print("\nBuscando saldo inicial...")
+                                saldo_inicial_celula = sheet['H13'].value
+                                print(f"Valor bruto encontrado em H13: {saldo_inicial_celula}")
+
+                                if saldo_inicial_celula is None:
+                                    messagebox.showerror("Erro", "A célula do saldo inicial está vazia.")
+                                    return
+
+                                if isinstance(saldo_inicial_celula, str):
+                                    saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
+                                else:
+                                    saldo_inicial = float(saldo_inicial_celula)
+
+                                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                                print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
+                    
+                                resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
+
+                                if not resposta:
+                                    print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
+                                    saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
+                                    if saldo_inicial_manual:
+                                        try:
+                                            saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
+                                            saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                                        except ValueError:
+                                            messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
+                                            return
+                                    else:
+                                        messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
+                                        return
+                                    
+                                self.saldo_inicial_entry.delete(0, tk.END)
+                                self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
+
+                                saldo_final_calculado = saldo_inicial
+
+                                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
+                                for row in range(14, sheet.max_row + 1):
+                                    try:
+                                        print(f"\nProcessando linha {row}:")
+                                        data = sheet.cell(row=row, column=1).value
+                                        print(f"Data encontrada: {data}")
+
+                                        valor = sheet.cell(row=row, column=7).value
+                                        if not valor:
+                                            print("Linha vazia, pulando...")
+
+                                        #if not data:
+                                            # print("Linha vazia, pulando...")
+                                            # continue
+                                        
+                                        if isinstance(data, str) and "total" in data.lower():
+                                            print("Encontrada linha de total, parando processamento...")
+                                            break
+
+                                        print(f"Processando valores...")
+                                        valor_celula = sheet.cell(row=row, column=7).value
+                                        if valor_celula == "0,00":
+                                            print("Valor 0,00 encontrado, pulando linha...")
+                                            continue
+
+                                        print(f"Processando descrições...")
+                                        valor_celula = sheet.cell(row=row, column=4).value
+                                        if valor_celula == "SALDO CONTA CORRENTE":
+                                            print("Saldo da poupança encontrado, pulando linha...")
+                                            continue
+
+                                        historico = sheet.cell(row=row, column=4).value
+                                        num_doc = sheet.cell(row=row, column=6).value
+                                        valor = sheet.cell(row=row, column=7).value
+
+                                        print(f"Valores lidos:")
+                                        print(f"  Histórico: {historico}")
+                                        print(f"  Nº Doc: {num_doc}")
+                                        print(f"  Valor: {valor}")
+
+                                        def tratar_valor(valor):
+                                            if valor is None or valor == "":
+                                                return 0.0
+                                            if isinstance(valor, str):
+                                                valor = valor.replace(".", "").replace(",", ".")
+                                            try:
+                                                return float(valor)
+                                            except ValueError:
+                                                return 0.0
+                                            
+                                        valor_total = valor#_credito + valor_debito
+                                        print(f"Valor total calculado: {valor_total}")
+
+                                        dados_importados.append([
+                                            data, historico, num_doc, valor_total, valor,
+                                            "", "", "", "", "", "", "", "", ""
+                                        ])
+
+                                        saldo_final_calculado += valor_total
+                                        print(f"Novo saldo calculado: {saldo_final_calculado}")
+                            
+                                    except Exception as e:
+                                        print(f"ERRO ao processar linha {row}:")
+                                        print(f"Detalhes do erro: {str(e)}")
+                                        continue
+
+                            print("\n=== ATUALIZANDO INTERFACE ===")
+                            print("Formatando saldo final...")
+                            saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+                            print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
+
+                            print("Atualizando campo de saldo final...")
+                            self.saldo_final_calculado_entry.delete(0, tk.END)
+                            self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
+                
+                            print("\nLimpando Treeview...")
+                            for i in self.tree.get_children():
+                                self.tree.delete(i)
+                    
+                            print("Inserindo dados na Treeview...")
+                            print(f"Total de registros a inserir: {len(dados_importados)}")
+                            for dados in dados_importados:
+                                self.tree.insert("", "end", values=dados)
+
+                            print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
+                            print(f"Total de linhas processadas: {len(dados_importados)}")
+
+                        except Exception as e:
+                            print("\n=== ERRO FATAL ===")
+                            print(f"Erro: {str(e)}")
+                            print("stack trace:")
+                            traceback.print_exc()
+                            messagebox.showerror("Erro",
+                                "Erro ao processar o arquivo. Verifique se:\n\n" +
+                                "1. O arquivo está no formato correto\n" +
+                                "2. O arquivo não está em modo de exibição protegida\n" +
+                                "3. O arquivo está fechado no Excel\n\n" +
+                                f"Erro: {str(e)}")
+                            return
+
+
 
 
                 else: #! LÓGICA PARA ARQUIVO XLS/XLSX, FORMATO ANTIGO
@@ -980,118 +1045,6 @@ class ImportadorExtratos:
         else:
             print("Nenhuma resposta específica fornecida para Safra.")
 
-        #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
-    def classificar_dados(self):
-        conta_bancaria = self.conta_entry.get()
-        incluir_banco = messagebox.askyesno("Classificar Dados", "Deseja incluir a identificação do banco no histórico contábil?")
-        
-        #considerar_descricao_bancaria = messagebox.askyesno("Classificar Dados", "Deseja considerar a descrição bancária como histórico contábil ao invés do histórico padrão parametrizado?")
-        
-        self.copiar_coluna("DataLEB", "DataLC")
-        self.copiar_coluna("ValorLEB", "ValorLC")
-
-        # Carregar contas.csv para obter a conta ativo
-        conta_ativo = None
-        try:
-            if os.path.exists('contas.csv'):
-                df_contas = pd.read_csv('contas.csv')
-                print("Colunas em contas.csv:", df_contas.columns)
-                filtro = (df_contas['empresa'] == self.empresa_entry.get()) & (df_contas['banco'] == self.banco_entry.get())
-                conta_encontrada = df_contas[filtro]
-                if not conta_encontrada.empty:
-                    conta_ativo = str(conta_encontrada.iloc[0]['Conta Ativo']).strip()
-                    print(f"Conta ativo encontrada: {conta_ativo}")
-        except Exception as e:
-            print(f"Erro ao carregar contas.csv: {e}")
-
-        df_descricoes_normalizadas = self.df_banco_dados['Descricao'].apply(
-            lambda x: unidecode(str(x).strip().upper())
-        )
-
-        # Dicionário de padrões de lançamentos
-        padroes_lancamentos = {
-            "TRANSF CC PARA CC PJ": "TRANSF CC PARA CC PJ",
-            "TED-TRANSF ELET DISPON REMET.": "TED-TRANSF ELET DISPON REMET.",
-            "TRANSFERENCIA PIX REM:": "TRANSFERENCIA PIX REM:",
-            "TRANSFERENCIA PIX DES:": "TRANSFERENCIA PIX DES:",
-            "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS": "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS",
-            "ENCARGOS C GARANTIA ENCARGO": "ENCARGOS C GARANTIA ENCARGO",
-            "ENCARGOS C GARANTIDA ENCARGO CONTR": "ENCARGOS C GARANTIDA ENCARGO", 
-            "ENCARGOS C GARANTIDA IOF     CONTR": "ENCARGOS C GARANTIDA IOF",
-            "TARIFA REGISTRO COBRANCA": "TARIFA REGISTRO COBRANCA",
-            "PAGTO ELETRON  COBRANCA": "PAGTO ELETRON  COBRANCA",
-            "VISA CREDITO": "VISA CREDITO",
-            "RECEBIMENTO FORNECEDOR": "RECEBIMENTO FORNECEDOR",
-            "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET": "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET",
-            "OPERACAO CAPITAL GIRO": "OPERACAO CAPITAL GIRO",
-            "PARCELA OPER CREDITO CONTR": "PARCELA OPER CREDITO CONTR",
-            "PAGTO ELETRONICO TRIBUTO INTERNET": "PAGTO ELETRONICO TRIBUTO INTERNET",
-            "TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO": "TAR",
-            "TED D CC HBANK* DEST. SHOCK METAIS NAO FER": "TED D CC HBANK* DEST. SHOCK METAIS NAO FER",
-            "TAR PACOTE MENSAL BASICO": "Tarifa Bancária",
-            "RECEBIMENTO TED D REMET.SHOCK METAIS N FERRO": "RECEBIMENTO TED D REMET.SHOCK METAIS N FERRO",
-            "TRANSF.EXCEDENTEGARANTIA": "TRANSF.EXCEDENTEGARANTIA",
-            "PARCELA OPER CREDITO CONTR": "PARCELA OPER CREDITO CONTR",
-            "PIX QR CODE DINAMICO DES:": "PIX QR CODE DINAMICO",
-            "TARIFA BANCARIA TRANSF PGTO PIX": "TARIFA BANCARIA",
-            "PAGTO ELETRON COBRANCA CONTR": "PAGTO ELETRON COBRANCA",
-            "PAGTO ELETRON COBRANCA": "PAGTO ELETRON COBRANCA",
-            "TAR COMANDADA COBRANCA": "Tarifa Bancária"
-        }
-
-        # Processar cada item na Treeview
-        for item in self.tree.get_children(): # copiar e simplificar descrições
-            values = list(self.tree.item(item, 'values'))
-            descricao = values[self.tree["columns"].index("DescriçãoLEB")]
-            
-            lancamento_idx = self.tree["columns"].index("LancamentoLC") # procurar por padrões conhecidos
-
-            lancamento_simplificado = descricao
-            if descricao.startswith("TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO"):
-                lancamento_simplificado = "TAR"
-            else:
-                for padrao in padroes_lancamentos:
-                    if descricao.startswith(padrao):
-                        lancamento_simplificado = padroes_lancamentos[padrao]
-                        break
-            
-            values[lancamento_idx] = lancamento_simplificado
-
-            descricao_sem_banco = descricao.split(" - Bco")[0].strip()
-            descricao_normalizada = unidecode(str(descricao_sem_banco).strip().upper())
-
-            correspondencia = self.df_banco_dados[
-                df_descricoes_normalizadas == descricao_normalizada
-            ]
-            
-            if not correspondencia.empty:
-                # Obter os valores correspondentes usando índices
-                debito = correspondencia.iloc[0, 6]  # coluna G (debito) no banco
-                credito = correspondencia.iloc[0, 9]  # coluna J (credito) no banco
-
-                if "#BCO" in str(debito):
-                    debito = conta_bancaria
-                if "#BCO" in str(credito):
-                    credito = conta_bancaria
-
-                # atualizar apenas as colunas relevantes
-                novos_valores = list(values)  # copiar os valores existentes
-                novos_valores[7] = debito  # atualizar a coluna de debito
-                novos_valores[9] = credito  # atualizar a coluna de credito
-                self.tree.item(item, values=novos_valores)
-
-            if incluir_banco:
-                banco_nome = self.banco_entry.get()
-                agencia_conta = self.agencia_conta_entry.get()
-                agencia_nome = agencia_conta.split('/')[0]
-                conta_nome = agencia_conta.split('/')[1]
-
-                if values[lancamento_idx]:
-                    values[lancamento_idx] = f"{values[lancamento_idx]} - Bco.{banco_nome} Ag.{agencia_nome} CC.{conta_nome}"
-
-            self.tree.item(item, values=values)
-
-        messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
 
     def confirmar_limpar_dados(self):
         resposta = messagebox.askyesno("Atenção", "Tem certeza que deseja limpar todos os dados?")
@@ -1117,18 +1070,18 @@ class ImportadorExtratos:
         ws = wb.active
 
         #* -------------------- DEFINE OS CABEÇALHOS DAS COLUNAS -------------------- #
-        colunas_exportar = ["LancamentoLC", "DataLC", "DébitoLC", "D-C/CLC", "CréditoLC",
-                      "C-C/CLC", "CNPJLC", "HistóricoLC", "ValorLC"]
+        colunas_exportar = ["LancamentoLC", "DataLC", "DebitoLC", "D-C/CLC", "CreditoLC",
+                      "C-C/CLC", "CNPJLC", "HistoricoLC", "ValorLC"]
         
         headers = {
             "LancamentoLC": "Lançamento",
             "DataLC": "Data",
-            "DébitoLC": "Débito",
+            "DebitoLC": "Débito",
             "D-C/CLC": "D-C/C",
-            "CréditoLC": "Crédito",
+            "CreditoLC": "Crédito",
             "C-C/CLC": "C-C/C",
             "CNPJLC": "CNPJ",
-            "HistóricoLC": "Histórico",
+            "HistoricoLC": "Histórico",
             "ValorLC": "Valor"
         }
 
@@ -1153,8 +1106,8 @@ class ImportadorExtratos:
 
     def limpar_classificacao(self):
         colunas_para_limpar = [
-            "LancamentoLC", "DataLC", "DébitoLC", "CréditoLC",
-            "HistóricoLC", "ValorLC"
+            "LancamentoLC", "DataLC", "DebitoLC", "CreditoLC",
+            "HistoricoLC", "ValorLC"
         ]
         
         for item in self.tree.get_children():
