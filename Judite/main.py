@@ -5,7 +5,6 @@ from openpyxl import Workbook
 import pandas as pd
 import csv
 import os
-import bcrypt
 import re
 import locale
 from datetime import datetime
@@ -30,8 +29,6 @@ class ImportadorExtratos:
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
         csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\lancamentoscontas1.csv"
-        self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
-        self.tree.tag_configure('negativo', foregroung='red')
 
         for i in range(6):
             root.grid_columnconfigure(i, weight=0)
@@ -386,13 +383,6 @@ class ImportadorExtratos:
         self.copiar_coluna("DataLEB", "DataLC")
         self.copiar_coluna("ValorLEB", "ValorLC")
         self.copiar_coluna("LancamentoLC", "HistoricoLC")
-
-        for item in self.tree.get_children():
-            values = self.tree.item(item, 'values')
-            valor_idx = self.tree["columns"].index("ValorLEB")
-            valor = values[valor_idx]
-            if valor and float(valor) < 0:
-                self.tree.item(item, tags=('negativo',))
 
 
         messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
