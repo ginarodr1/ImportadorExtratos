@@ -401,6 +401,7 @@ class ImportadorExtratos:
             "Bco.Daycoval": self.acao_daycoval, "Banco Daycoval": self.acao_daycoval, "BANCO DAYCOVAL": self.acao_daycoval, "DAYCOVAL": self.acao_daycoval, "Daycoval": self.acao_daycoval, "EXTRATO DAYCOVAL": self.acao_daycoval,
             "Bco.Itaú": self.acao_itau, "Banco Itaú": self.acao_itau, "BANCO ITAÚ": self.acao_itau, "ITAÚ": self.acao_itau, "Itaú": self.acao_itau, "EXTRATO ITAU": self.acao_itau, "EXTRATO ITAÚ": self.acao_itau,
             "Bco.Brasil": self.acao_brasil, "Banco do Brasil": self.acao_brasil, "BANCO DO BRASIL": self.acao_brasil, "BB": self.acao_brasil, "BRASIL": self.acao_brasil, "Brasil": self.acao_brasil, "EXTRATO BB": self.acao_brasil,
+            "Bco.Santander": self.acao_santander, "Banco Santander": self.acao_santander, "BANCO SANTANDER": self.acao_santander, "SANTANDER": self.acao_santander, "Santander": self.acao_santander, "EXTRATO SANTANDER": self.acao_santander,
         }
 
         print(f"Chaves disponíveis: {list(acoes.keys())}")
@@ -446,11 +447,21 @@ class ImportadorExtratos:
                     saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
                     print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
                     
-                    resposta = messagebox.askyesno("Confirmação de saldo", 
-                                                 f"O saldo inicial é de R${saldo_inicial_frmt}?")
+                    resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
+
                     if not resposta:
-                        print("Usuário não confirmou o saldo inicial. Abortando...")
-                        return
+                        print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
+                        saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
+                        if saldo_inicial_manual:
+                            try:
+                                saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
+                                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                            except ValueError:
+                                messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
+                                return
+                        else:
+                            messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
+                            return
                         
                     print("Atualizando campo de saldo inicial na interface...")
                     self.saldo_inicial_entry.delete(0, tk.END)
@@ -1040,6 +1051,161 @@ class ImportadorExtratos:
         else:
             print("Nenhuma resposta específica fornecida para Safra.")
 
+    def acao_santander(self, arquivo):
+        print("\n=== INÍCIO DO PROCESSAMENTO: SANTANDER ===")
+        print(f"Arquivo Recebido: {arquivo}")
+        def formatar_valor_brasileiro(valor):
+            try:
+                return locale.format_string("%.2f", float(valor), grouping=True)
+            except:
+                return valor
+        try:
+            extensao = arquivo.lower().split('.')[-1]
+            print(f"Extensão detectada: {extensao}")
+            dados_importados = []
+            saldo_final_calculado = 0
+
+            if extensao == 'xls': #! SE O ARQUIVO É XLS
+                print("\n=== PROCESSANDO ARQUIVO XLS ===")
+
+            else: #! SE O ARQUIVO É XLSX
+                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                wb = openpyxl.load_workbook(arquivo, data_only=True)
+                sheet = wb.active
+                print(f"Planilha ativa: {sheet.title}")
+
+                print("\nBuscando saldo inicial...")
+                saldo_inicial_celula = sheet['F4'].value
+                print(f"Valor bruto encontrado em F4: {saldo_inicial_celula}")
+
+                if isinstance(saldo_inicial_celula, str):
+                    saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
+                else:
+                    saldo_inicial = float(saldo_inicial_celula)
+
+                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
+
+                resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
+
+                if not resposta:
+                    print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
+                    saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
+                    if saldo_inicial_manual:
+                        try:
+                            saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
+                            saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                        except ValueError:
+                            messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
+                            return
+                    else:
+                        messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
+                        return
+                    
+                self.saldo_inicial_entry.delete(0, tk.END)
+                self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
+
+                saldo_final_calculado = saldo_inicial
+
+                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
+                for row in range(4, sheet.max_row + 1):
+                    try:
+                        print(f"\nProcessando linha {row}:")
+                        data = sheet.cell(row=row, column=1).value
+                        print(f"Data encontrada: {data}")
+
+                        historico = sheet.cell(row=row, column=3).value
+                        num_doc = sheet.cell(row=row, column=4).value
+                        valor = sheet.cell(row=row, column=5).value
+                        saldo = sheet.cell(row=row, column=6).value
+
+                        print(f"Valores lidos:")
+                        print(f"  Histórico: {historico}")
+                        print(f"  N° Doc: {num_doc}")
+                        print(f"  Valor: {valor}")
+                        print(f"  Saldo: {saldo}")
+
+                        #if valor is None or str(valor).strip() == "":
+                            #print("Valor vazio, pulando linha...")
+                            #continue
+
+                        def converter_para_float(valor):
+                            if valor is None or valor == "":
+                                return 0.0
+                            if isinstance(valor, str):
+                                valor = valor.replace(".", "").replace(",", ".")
+                            try:
+                                return float(valor)
+                            except ValueError:
+                                return 0.0
+                            
+                        valor_total = converter_para_float(valor)
+                        valor_formatado = formatar_valor_brasileiro(valor_total)
+                        print(f"Valor total calculado: {valor_total}")
+
+                        saldo_total = converter_para_float(saldo)
+                        saldo_formatado = formatar_valor_brasileiro(saldo_total)
+                        print(f"Saldo total formatado: {saldo_total}")
+
+                        dados_importados.append([
+                            data, historico, num_doc, valor_formatado, saldo_formatado,
+                            "", "", "", "", "", "", "", ""
+                        ])
+
+                        saldo_final_calculado += valor_total
+                        print(f"Novo saldo calculado: {saldo_final_calculado}")
+                            
+                    except Exception as e:
+                        print(f"ERRO ao processar linha {row}:")
+                        print(f"Detalhes do erro: {str(e)}")
+                        continue
+
+            print("\n=== ATUALIZANDO INTERFACE ===")
+            print("Formatando saldo final...")
+            saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+            print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
+
+            print("Atualizando campo de saldo final...")
+            self.saldo_final_calculado_entry.delete(0, tk.END)
+            self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
+
+            print("\nLimpando Treeview...")
+            for i in self.tree.get_children():
+                self.tree.delete(i)
+
+            print("Inserindo dados na Treeview...")
+            print(f"Total de registros a inserir: {len(dados_importados)}")
+            for dados in dados_importados:
+                self.tree.insert("", "end", values=dados)
+                for item in self.tree.get_children():
+                    values = self.tree.item(item, 'values')
+                    valor_idx = self.tree["columns"].index("ValorLEB")
+                    valor = values[valor_idx]
+                    if valor:
+                        try:
+                            valor_float = float(str(valor).replace('.', '').replace(',', '.'))
+                            if valor_float < 0:
+                                self.tree.item(item, tags=('negativo',))
+                        except ValueError:
+                            print(f"Erro ao converter valor '{valor}' para float.")
+                    
+            print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
+            print(f"Total de linhas processadas: {len(dados_importados)}")
+
+        except Exception as e:
+            print("\n=== ERRO FATAL ===")
+            print(f"Erro: {str(e)}")
+            print("stack trace:")
+            traceback.print_exc()
+            messagebox.showerror("Erro",
+                "Erro ao processar o arquivo. Verifique se:\n\n" +
+                "1. O arquivo está no formato correto\n" +
+                "2. O arquivo não está em modo de exibição protegida\n" +
+                "3. O arquivo está fechado no Excel\n\n" +
+                f"Erro: {str(e)}")
+            return
+
     def acao_daycoval(self, arquivo):
         print("\n=== INÍCIO DO PROCESSAMENTO: DAYCOVAL ===")
         print(f"Arquivo Recebido: {arquivo}")
@@ -1067,7 +1233,6 @@ class ImportadorExtratos:
                 "3. O arquivo está fechado no Excel\n\n" +
                 f"Erro: {str(e)}")
             return
-
 
     def acao_itau(self, arquivo):
         print("\n=== INÍCIO DO PROCESSAMENTO: ITAÚ ===")
@@ -1320,7 +1485,6 @@ class ImportadorExtratos:
                 "3. O arquivo está fechado no Excel\n\n" +
                 f"Erro: {str(e)}")
             return
-
 
     def acao_brasil(self, arquivo):
         print("\n=== INÍCIO DO PROCESSAMENTO: BANCO DO BRASIL ===")
