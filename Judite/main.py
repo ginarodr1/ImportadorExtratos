@@ -5,6 +5,7 @@ from openpyxl import Workbook
 import pandas as pd
 import csv
 import os
+import bcrypt
 import re
 import locale
 from datetime import datetime
@@ -29,6 +30,7 @@ class ImportadorExtratos:
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
         csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\lancamentoscontas1.csv"
+        self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
 
         for i in range(6):
             root.grid_columnconfigure(i, weight=0)
@@ -150,6 +152,9 @@ class ImportadorExtratos:
 
         # Empacote a Treeview
         self.tree.pack(side="left", fill="both", expand=True)
+
+        
+        self.tree.tag_configure('negativo', foreground='red')
 
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
@@ -483,19 +488,13 @@ class ImportadorExtratos:
                             print(f"  Saldo: {saldo}")
                             
                             def tratar_valor(valor):
-                                print(f"Tratando valor: {valor} (tipo: {type(valor)})")
                                 if valor is None or valor == "":
-                                    print("Valor vazio, retornando 0.0")
                                     return 0.0
                                 if isinstance(valor, str):
-                                    print("Convertendo string para float...")
                                     valor = valor.replace(".", "").replace(",", ".")
                                 try:
-                                    resultado = float(valor)
-                                    print(f"Valor convertido: {resultado}")
-                                    return resultado
-                                except ValueError as e:
-                                    print(f"Erro ao converter valor: {e}")
+                                    return float(valor)
+                                except ValueError:
                                     return 0.0
                             
                             valor_credito = tratar_valor(credito)
@@ -625,6 +624,7 @@ class ImportadorExtratos:
                     
                 print("Inserindo dados na Treeview...")
                 print(f"Total de registros a inserir: {len(dados_importados)}")
+
                 for dados in dados_importados:
                     self.tree.insert("", "end", values=dados)
                     for item in self.tree.get_children():
@@ -1051,19 +1051,6 @@ class ImportadorExtratos:
             if extensao == 'xls':
                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
 
-                print("Abringo workbook...")
-                wb = xlrd.open_workbook(arquivo)
-                sheet = wb.sheet_by_index(0)
-                print(f"Planilha aberta: {sheet.name}")
-                print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
-
-                print("\nBuscando saldo inicial...")
-                saldo_inicial = sheet.cell_value(9, 5)
-                print(f"Valor bruto encontrado em F10: {saldo_inicial}")
-                print(f"Tipo do valor: {type(saldo_inicial)}")
-
-        
-
             else:  #! xlsx
                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
 
@@ -1079,7 +1066,6 @@ class ImportadorExtratos:
                 "3. O arquivo está fechado no Excel\n\n" +
                 f"Erro: {str(e)}")
             return
-
 
     def acao_itau(self, arquivo):
         print("\n=== INÍCIO DO PROCESSAMENTO: ITAÚ ===")
