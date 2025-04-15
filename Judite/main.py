@@ -662,6 +662,11 @@ class ImportadorExtratos:
     def acao_safra(self, arquivo, respostas_safra):
         print("\n=== INÍCIO DO PROCESSAMENTO: SAFRA ===")
         print(f"Arquivo recebido: {arquivo}")
+        def formatar_valor_brasileiro(valor):
+            try:
+                return locale.format_string("%.2f", float(valor), grouping=True)
+            except:
+                return valor
 
         if respostas_safra:
             novo_formato = respostas_safra.get("novo_formato", False)
@@ -677,25 +682,30 @@ class ImportadorExtratos:
                             saldo_final_calculado = 0
 
                             if extensao == "xls": #! SE O ARQUIVO É XLS
+                                import xlrd
                                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
                                 print("Abrindo workbook...")
-
                                 wb = xlrd.open_workbook(arquivo)
+                                sheet = wb.sheet_by_index(0)
                                 print(f"Planilha aberta: {sheet.name}")
-                                print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
+                                print(f"Dimensões? {sheet.nrows} linhas x {sheet.ncols} colunas")
 
                                 print("\nBuscando saldo inicial...")
-                                saldo_inicial = sheet.cell_value(8, 5)
-                                print(f"Valor bruto encontrando em F9: {saldo_inicial}")
+                                saldo_inicial = sheet.cell_value(3, 5)
+                                print(f"Valor bruto encontrado em F4: {saldo_inicial}")
                                 print(f"Tipo do valor: {type(saldo_inicial)}")
 
-                                if isinstance(saldo_inicial, str):
-                                    print("Convertendo saldo inicial de string para float...")
-                                    saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", "."))
-                                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                                try:
+                                    if isinstance(saldo_inicial, str):
+                                        print("Convertendo saldo inicial de string para float...")
+                                        saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", "."))
+                                    saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                                except ValueError:
+                                    saldo_inicial_frmt = ""
+                                    saldo_inicial = 0.0
                                 print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
 
-                                resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}")
+                                resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
 
                                 if not resposta:
                                     print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
@@ -710,17 +720,77 @@ class ImportadorExtratos:
                                     else:
                                         messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
                                         return
-
-                                #if not resposta:
-                                    #messagebox.showinfo("Aviso", "Funcionalidade de importação de PDF ainda não implementada.")
-                                    #return
-                                
+                    
                                 print("Atualizando campo de saldo inicial na interface...")
                                 self.saldo_inicial_entry.delete(0, tk.END)
                                 self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
 
-                                #* continua...
+                                saldo_final_calculado = saldo_inicial
 
+                                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
+                                print(f"Total de linhas na planilha: {sheet.nrows}")
+
+                                for row in range(8, sheet.nrows):
+                                    try:
+                                        print(f"\nProcessando linha {row+1}:")
+                                        data = sheet.cell_value(row, 0)
+                                        print(f"Data encontrada: {data} (tipo: {type(data)})")
+
+                                        historico = sheet.cell_value(row, 1)
+                                        num_doc = sheet.cell_value(row, 4)
+                                        valor = sheet.cell_value(row, 5)
+
+                                        print(f"Valores lidos:")
+                                        print(f"  Histórico: {historico}")
+                                        print(f"  N° Doc: {num_doc}")
+                                        print(f"  Valor: {valor}")
+
+                                        print(f"Processando descrições...")
+                                        valor_celula = sheet.cell_value(row, 1)
+                                        if isinstance(valor_celula, str) and valor_celula.strip() in ["SALDO POUPANCA PLUS", "CONTA VINCULADA"]:
+                                            print("Saldo/conta encontrada, pulando linha...")
+                                            continue
+
+                                        def converter_para_float(valor):
+                                            print(f"Tratando valor: {valor} (tipo: {type(valor)})")
+                                            if valor is None or valor == "":
+                                                print("Valor vazio, retornando 0.0")
+                                                return 0.0
+                                            if isinstance(valor, str):
+                                                print("Convertendo string para float...")
+                                                valor = valor.replace(".", "").replace(",", ".")
+                                            try:
+                                                resultado = float(valor)
+                                                print(f"Valor convertido: {resultado}")
+                                                return resultado
+                                            except ValueError as e:
+                                                print(f"Erro ao converter valor: {e}")
+                                                return 0.0
+
+                                        valor_total = converter_para_float(valor)
+                                        valor_formatado = formatar_valor_brasileiro(valor_total)
+                                        print(f"Valor total calculado: {valor_formatado}")
+
+                                        if isinstance(data, float):
+                                            print("Convertendo data de float para string...")
+                                            data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
+                                            print(f"Data convertida: {data}")
+                            
+                                        print("Adicionando linha aos dados importados...")
+                                        dados_importados.append([
+                                            data, historico, num_doc, valor_formatado, "",
+                                            "", "", "", "", "", "", "", ""
+                                        ])
+
+                                        saldo_final_calculado += valor_total
+                                        saldo_final_calculado = round(saldo_final_calculado, 2)
+                                        print(f"Novo saldo calculado: {saldo_final_calculado}")
+                            
+                                    except Exception as e:
+                                        print(f"ERRO ao processar linha {row+1}:")
+                                        print(f"Detalhes do erro: {str(e)}")
+                                        traceback.print_exc()
+                                        continue
 
                             else: #! SE O ARQUIVO É XLSX
                                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
@@ -728,7 +798,7 @@ class ImportadorExtratos:
                                 sheet = wb.active
                                 print(f"Planilha ativa: {sheet.title}")
                     
-                    # Lê o saldo inicial (F10)
+                                # Lê o saldo inicial (F10)
                                 print("\nBuscando saldo inicial...")
                                 saldo_inicial_celula = sheet['F9'].value
                                 print(f"Valor bruto encontrado em F9: {saldo_inicial_celula}")
@@ -1090,8 +1160,8 @@ class ImportadorExtratos:
                             saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
                             saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
                         except ValueError:
-                                messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
-                                return
+                            messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
+                            return
                     else:
                         messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
                         return
