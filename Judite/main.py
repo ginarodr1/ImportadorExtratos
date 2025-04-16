@@ -5,7 +5,6 @@ from openpyxl import Workbook
 import pandas as pd
 import csv
 import os
-import bcrypt
 import re
 import locale
 from datetime import datetime, date
@@ -136,25 +135,20 @@ class ImportadorExtratos:
         self.frame_tree = tk.Frame(root)
         self.frame_tree.grid(row=7, column=0, columnspan=6, pady=5, padx=10, sticky="nsew")
 
-        # Crie a Treeview dentro do frame
-        self.tree = ttk.Treeview(self.frame_tree, columns=(
+        self.tree = ttk.Treeview(self.frame_tree, columns=( #? cria a Treeview dentro do frame
             "DataLEB", "DescricaoLEB", "NDocLEB", "ValorLEB", "SaldoLEB",
             "LancamentoLC", "DataLC", "DebitoLC", "D-C/CLC", "CreditoLC",
             "C-C/CLC", "CNPJLC", "HistoricoLC", "ValorLC"
         ), show="headings")
 
-        # Crie a Scrollbar vertical
-        self.scrollbar_y = ttk.Scrollbar(self.frame_tree, orient="vertical", command=self.tree.yview)
+        self.scrollbar_y = ttk.Scrollbar(self.frame_tree, orient="vertical", command=self.tree.yview) #? cria a scrollbar vertical
         self.scrollbar_y.pack(side="right", fill="y")
 
-        # Configure a Treeview para usar a Scrollbar
-        self.tree.configure(yscrollcommand=self.scrollbar_y.set)
+        self.tree.configure(yscrollcommand=self.scrollbar_y.set) #? configura a treeview para usar a scrollbar
 
-        # Empacote a Treeview
-        self.tree.pack(side="left", fill="both", expand=True)
-
+        self.tree.pack(side="left", fill="both", expand=True) #? empacota a treeview
         
-        self.tree.tag_configure('negativo', foreground='red')
+        self.tree.tag_configure('negativo', foreground='red') #? torna os valores negativos em vermelho
 
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
@@ -268,16 +262,12 @@ class ImportadorExtratos:
             valor_origem = values[self.tree["columns"].index(coluna_origem)]
             self.tree.set(item, coluna_destino, valor_origem)
 
-
         #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
     def classificar_dados(self):
         conta_bancaria = self.conta_entry.get()
         incluir_banco = messagebox.askyesno("Classificar Dados", "Deseja incluir a identificação do banco no histórico contábil?")
         
-        
-
-        # Carregar contas.csv para obter a conta ativo
-        conta_ativo = None
+        conta_ativo = None #? carregar contas.csv para obter a conta ativo
         try:
             if os.path.exists('contas.csv'):
                 df_contas = pd.read_csv('contas.csv')
@@ -289,8 +279,7 @@ class ImportadorExtratos:
         except Exception as e:
             print(f"Erro ao carregar contas.csv: {e}")
 
-        # Dicionário de padrões de lançamentos
-        padroes_lancamentos = {
+        padroes_lancamentos = { #? dicionário de padrões de lançamentos
             #! BRADESCO
             "TRANSF CC PARA CC PJ": "TRANSF CC PARA CC PJ", 
             "TED-TRANSF ELET DISPON REMET.": "TED-TRANSF ELET DISPON REMET.",
@@ -321,12 +310,12 @@ class ImportadorExtratos:
             "TAR COMANDADA COBRANCA": "Tarifa Bancária",
         }
 
-        # Processar cada item na Treeview
-        for item in self.tree.get_children(): # copiar e simplificar descrições
+        
+        for item in self.tree.get_children(): #? processar cada item na treeview
             values = list(self.tree.item(item, 'values'))
-            descricao = values[self.tree["columns"].index("DescricaoLEB")]
+            descricao = values[self.tree["columns"].index("DescricaoLEB")] #? copiar e simplificar descrições
             
-            lancamento_simplificado = descricao # procurar por padrões conhecidos
+            lancamento_simplificado = descricao #? procurar por padrões conhecidos
 
             if descricao.startswith("TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO"):
                 lancamento_simplificado = "TAR"
@@ -336,16 +325,16 @@ class ImportadorExtratos:
                         lancamento_simplificado = padroes_lancamentos[padrao]
                         break
             
-            lancamento_idx = self.tree["columns"].index("LancamentoLC") # atualizar o lançamento
+            lancamento_idx = self.tree["columns"].index("LancamentoLC") #? atualizar o lançamento
             values[lancamento_idx] = lancamento_simplificado
             
-            if incluir_banco: # adicionar identificação do banco se solicitado
+            if incluir_banco: #? adicionar identificação do banco se solicitado
                 banco_nome = self.banco_entry.get()
                 agencia_conta = self.agencia_conta_entry.get()
                 agencia_nome = agencia_conta.split('/')[0]
                 conta_nome = agencia_conta.split('/')[1]
                 
-                if values[lancamento_idx]:  # verifica se o lançamento não está vazio
+                if values[lancamento_idx]:  #? verifica se o lançamento não está vazio
                     values[lancamento_idx] = f"{values[lancamento_idx]} - Bco.{banco_nome} Ag.{agencia_nome} CC.{conta_nome}"
             
             self.tree.item(item, values=values)
@@ -354,11 +343,11 @@ class ImportadorExtratos:
             lambda x: unidecode(str(x).strip().upper())
         )
 
-        # Iterar sobre os itens na Treeview para classificar débito e crédito
+        #? verifica os itens na treeview para classificar débito e crédito
         for item in self.tree.get_children():
             values = self.tree.item(item, 'values')
             descricao_idx = self.tree["columns"].index("LancamentoLC")
-            descricao = values[descricao_idx]  # a descricao está na segunda coluna
+            descricao = values[descricao_idx]  #? a descricao está na segunda coluna
 
             descricao_normalizada = unidecode(str(descricao).strip().upper())
 
@@ -366,30 +355,25 @@ class ImportadorExtratos:
                 df_descricoes_normalizadas == descricao_normalizada
             ]
 
-            # procura a descrição e o tipo no banco
-            #correspondencia = self.df_banco_dados[self.df_banco_dados['Descricao'] == descricao]
-
-            if not correspondencia.empty:
-                # Obter os valores correspondentes usando índices
-                descricao_banco = correspondencia.iloc[0, 5]  # coluna F (descricao) no banco
-                debito = correspondencia.iloc[0, 6]  # coluna G (debito) no banco
-                credito = correspondencia.iloc[0, 9]  # coluna J (credito) no banco
+            if not correspondencia.empty: #? obter os valores correspondentes usando índices
+                descricao_banco = correspondencia.iloc[0, 5]  #? coluna F (descricao) no banco
+                debito = correspondencia.iloc[0, 6]  #? coluna G (debito) no banco
+                credito = correspondencia.iloc[0, 9]  #? coluna J (credito) no banco
 
                 if "#BCO" in str(debito):
                     debito = conta_bancaria
                 if "#BCO" in str(credito):
                     credito = conta_bancaria
 
-                # atualizar apenas as colunas relevantes
-                novos_valores = list(values)  # copiar os valores existentes
-                novos_valores[7] = debito  # atualizar a coluna de debito
-                novos_valores[9] = credito  # atualizar a coluna de credito
+                #? atualizar apenas as colunas relevantes
+                novos_valores = list(values)  #? copiar os valores existentes
+                novos_valores[7] = debito  #? atualizar a coluna de debito
+                novos_valores[9] = credito  #? atualizar a coluna de credito
                 self.tree.item(item, values=novos_valores)
 
         self.copiar_coluna("DataLEB", "DataLC")
         self.copiar_coluna("ValorLEB", "ValorLC")
         self.copiar_coluna("LancamentoLC", "HistoricoLC")
-
 
         messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
 
@@ -422,7 +406,7 @@ class ImportadorExtratos:
                 extensao = arquivo.lower().split('.')[-1]
                 print(f"Extensão detectada: {extensao}")
                 dados_importados = []
-                saldo_final_calculado = 0  # Inicializa a variável aqui
+                saldo_final_calculado = 0  #? inicializa a variável aqui
                 
                 if extensao == 'xls': #! SE O ARQUIVO É XLS
                     print("\n=== PROCESSANDO ARQUIVO XLS ===")
@@ -431,14 +415,12 @@ class ImportadorExtratos:
                     print(f"Planilha aberta: {sheet.name}")
                     print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
                     
-                    # Lê o saldo inicial (F10)
-                    print("\nBuscando saldo inicial...")
+                    print("\nBuscando saldo inicial...") #? lê o saldo inicial (F10)
                     saldo_inicial = sheet.cell_value(9, 5)
                     print(f"Valor bruto encontrado em F10: {saldo_inicial}")
                     print(f"Tipo do valor: {type(saldo_inicial)}")
                     
-                    # Formata e confirma saldo inicial
-                    if isinstance(saldo_inicial, str):
+                    if isinstance(saldo_inicial, str): #? formata e confirma saldo inicial
                         print("Convertendo saldo inicial de string para float...")
                         saldo_inicial = float(saldo_inicial.replace(".", "").replace(",", "."))
                     saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
@@ -464,8 +446,7 @@ class ImportadorExtratos:
                     self.saldo_inicial_entry.delete(0, tk.END)
                     self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
                     
-                    # Processa as linhas
-                    saldo_final_calculado = saldo_inicial
+                    saldo_final_calculado = saldo_inicial #? processa as linhas
                     
                     print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
                     print(f"Total de linhas na planilha: {sheet.nrows}")
@@ -511,8 +492,7 @@ class ImportadorExtratos:
                             valor_total = valor_credito + valor_debito
                             print(f"Valor total calculado: {valor_total}")
                             
-                            # Formata a data se for um número
-                            if isinstance(data, float):
+                            if isinstance(data, float): #? formata a data se for um número
                                 print("Convertendo data de float para string...")
                                 data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
                                 print(f"Data convertida: {data}")
@@ -532,14 +512,13 @@ class ImportadorExtratos:
                             traceback.print_exc()
                             continue
                     
-                else:  # xlsx
+                else:  #! SE O ARQUIVO É XLSX
                     print("\n=== PROCESSANDO ARQUIVO XLSX ===")
                     wb = openpyxl.load_workbook(arquivo, data_only=True)
                     sheet = wb.active
                     print(f"Planilha ativa: {sheet.title}")
                     
-                    # Lê o saldo inicial (F10)
-                    print("\nBuscando saldo inicial...")
+                    print("\nBuscando saldo inicial...") #? lê o saldo inicial (F10)
                     saldo_inicial_celula = sheet['F10'].value
                     print(f"Valor bruto encontrado em F10: {saldo_inicial_celula}")
                     
@@ -560,7 +539,7 @@ class ImportadorExtratos:
                     self.saldo_inicial_entry.delete(0, tk.END)
                     self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
                     
-                    # Inicializa o saldo final calculado com o saldo inicial
+                    #? inicializa o saldo final calculado com o saldo inicial
                     saldo_final_calculado = saldo_inicial
                     
                     print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
@@ -636,12 +615,6 @@ class ImportadorExtratos:
 
                 for dados in dados_importados:
                     self.tree.insert("", "end", values=dados)
-                    # for item in self.tree.get_children():
-                    #     values = self.tree.item(item, 'values')
-                    #     valor_idx = self.tree["columns"].index("ValorLEB")
-                    #     valor = values[valor_idx]
-                    #     if valor and float(valor) < 0:
-                    #         self.tree.item(item, tags=('negativo',))
                     
                 print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                 print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -658,12 +631,6 @@ class ImportadorExtratos:
                     "3. O arquivo está fechado no Excel\n\n" +
                     f"Erro: {str(e)}")
                 return
-
-
-
-
-
-
 
     def acao_safra(self, arquivo, respostas_safra):
         print("\n=== INÍCIO DO PROCESSAMENTO: SAFRA ===")
@@ -809,12 +776,12 @@ class ImportadorExtratos:
                                         if isinstance(data, float):
                                             data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
                                         elif isinstance(data, str):
-                                            if re.match(r'\d{2}/\d{2}', data):  # Ex: 02/01
+                                            if re.match(r'\d{2}/\d{2}', data):  #? ex: 02/01
                                                 try:
                                                     data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
                                                 except Exception as e:
                                                     print(f"Erro ao converter data '{data}': {e}")
-                                            elif re.match(r'\d{2}/[a-zA-Z]{3}', data):  # Ex: 02/jan
+                                            elif re.match(r'\d{2}/[a-zA-Z]{3}', data):  #? ex: 02/jan
                                                 data = converter_data_pt(data, ano_extrato)
                             
                                         print("Adicionando linha aos dados importados...")
@@ -851,7 +818,6 @@ class ImportadorExtratos:
                                 ano_extrato = extrair_ano(texto_periodo)
                                 print(f"Ano extraído do período: {ano_extrato}")
 
-# === Mapeamento dos meses em português ===
                                 meses_pt = {
                                     'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
                                     'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
@@ -868,7 +834,6 @@ class ImportadorExtratos:
                                         print(f"Erro ao converter data '{data_str}': {e}")
                                     return data_str
 
-                                # Lê o saldo inicial (F10)
                                 print("\nBuscando saldo inicial...")
                                 saldo_inicial_celula = sheet['F9'].value
                                 print(f"Valor bruto encontrado em F9: {saldo_inicial_celula}")
@@ -897,20 +862,14 @@ class ImportadorExtratos:
                                         messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
                                         return
 
-                                #if not resposta:
-                                    #messagebox.showinfo("Aviso", "Funcionalidade de importação de PDF ainda não implementada.")
-                                    #return
-                        
                                 self.saldo_inicial_entry.delete(0, tk.END)
                                 self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
                     
-                    # Inicializa o saldo final calculado com o saldo inicial
                                 saldo_final_calculado = saldo_inicial
                     
                                 print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
                                 for row in range(10, sheet.max_row + 1):
                                     try:
-
                                         print(f"\nProcessando linha {row}:")
                                         data = sheet.cell(row=row, column=1).value
                                         print(f"Data encontrada: {data}")
@@ -936,15 +895,11 @@ class ImportadorExtratos:
                                 
                                         historico = sheet.cell(row=row, column=2).value
                                         num_doc = sheet.cell(row=row, column=5).value
-                                        #credito = sheet.cell(row=row, column=4).value
-                                        #debito = sheet.cell(row=row, column=5).value
                                         valor = sheet.cell(row=row, column=6).value
                             
                                         print(f"Valores lidos:")
                                         print(f"  Histórico: {historico}")
                                         print(f"  Nº Doc: {num_doc}")
-                                        #print(f"  Crédito: {credito}")
-                                        #print(f"  Débito: {debito}")
                                         print(f"  Valor: {valor}")
                             
                                         def converter_para_float(valor):
@@ -957,17 +912,14 @@ class ImportadorExtratos:
                                             except ValueError:
                                                 return 0.0
                             
-                                        #valor_credito = converter_para_float(credito)
-                                        #valor_debito = converter_para_float(debito)
-                                        valor_total = valor#_credito + valor_debito
                                         print(f"Valor total calculado: {valor_total}")
 
                                         if isinstance(data, datetime):
                                             data = data.strftime("%d/%m/%Y")
                                         elif isinstance(data, str):
-                                            if re.match(r"\d{2}/[a-zA-Z]{3}", data):  # ex: 02/jan
+                                            if re.match(r"\d{2}/[a-zA-Z]{3}", data):  #? ex: 02/jan
                                                 data = converter_data_pt(data, ano_extrato)
-                                            elif re.match(r"\d{2}/\d{2}", data):  # ex: 02/01
+                                            elif re.match(r"\d{2}/\d{2}", data):  #? ex: 02/01
                                                 try:
                                                     data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
                                                 except Exception as e:
@@ -1141,12 +1093,12 @@ class ImportadorExtratos:
                                         if isinstance(data, float):
                                             data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
                                         elif isinstance(data, str):
-                                            if re.match(r'\d{2}/\d{2}', data):  # Ex: 02/01
+                                            if re.match(r'\d{2}/\d{2}', data):  #? ex: 02/01
                                                 try:
                                                     data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
                                                 except Exception as e:
                                                     print(f"Erro ao converter data '{data}': {e}")
-                                            elif re.match(r'\d{2}/[a-zA-Z]{3}', data):  # Ex: 02/jan
+                                            elif re.match(r'\d{2}/[a-zA-Z]{3}', data):  #? ex: 02/jan
                                                 data = converter_data_pt(data, ano_extrato)
                             
                                         print("Adicionando linha aos dados importados...")
@@ -1182,7 +1134,6 @@ class ImportadorExtratos:
                                 ano_extrato = extrair_ano(texto_periodo)
                                 print(f"Ano extraído do período: {ano_extrato}")
 
-# === Mapeamento dos meses em português ===
                                 meses_pt = {
                                     'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
                                     'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
@@ -1246,10 +1197,6 @@ class ImportadorExtratos:
                                         valor = sheet.cell(row=row, column=7).value
                                         if not valor:
                                             print("Linha vazia, pulando...")
-
-                                        #if not data:
-                                            # print("Linha vazia, pulando...")
-                                            # continue
                                         
                                         if isinstance(data, str) and "total" in data.lower():
                                             print("Encontrada linha de total, parando processamento...")
@@ -1286,15 +1233,15 @@ class ImportadorExtratos:
                                             except ValueError:
                                                 return 0.0
                                             
-                                        valor_total = valor#_credito + valor_debito
+                                        valor_total = valor
                                         print(f"Valor total calculado: {valor_total}")
 
                                         if isinstance(data, datetime):
                                             data = data.strftime("%d/%m/%Y")
                                         elif isinstance(data, str):
-                                            if re.match(r"\d{2}/[a-zA-Z]{3}", data):  # ex: 02/jan
+                                            if re.match(r"\d{2}/[a-zA-Z]{3}", data):  #? ex: 02/jan
                                                 data = converter_data_pt(data, ano_extrato)
-                                            elif re.match(r"\d{2}/\d{2}", data):  # ex: 02/01
+                                            elif re.match(r"\d{2}/\d{2}", data):  #? ex: 02/01
                                                 try:
                                                     data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
                                                 except Exception as e:
@@ -1347,8 +1294,6 @@ class ImportadorExtratos:
                                 f"Erro: {str(e)}")
                             return
 
-
-
                 else: #! LÓGICA PARA ARQUIVO XLS/XLSX, FORMATO ANTIGO
                     print("Processando XLS/XLSX, formato antigo do Safra")
 
@@ -1357,10 +1302,8 @@ class ImportadorExtratos:
                     if conta_vinculada: #! LÓGICA PARA ARQUIVO PDF, NOVO FORMATO E CONTA VINCULADA
                         print("Processando PDF, novo formato do Safra, conta vinculada.")
 
-
                     else: #! LÓGICA PARA ARQUIVO PDF, NOVO FORMATO E CONTA CORRENTE
                         print("Processando PDF, novo formato do Safra, conta corrente.")
-
 
                 else: #! LÓGICA PARA ARQUIVO PDF, FORMATO ANTIGO
                     print("Processando PDF, formato antigo do Safra.")
@@ -1550,10 +1493,6 @@ class ImportadorExtratos:
                         print(f"  Valor: {valor}")
                         print(f"  Saldo: {saldo}")
 
-                        #if valor is None or str(valor).strip() == "":
-                            #print("Valor vazio, pulando linha...")
-                            #continue
-
                         def converter_para_float(valor):
                             if valor is None or valor == "":
                                 return 0.0
@@ -1602,17 +1541,6 @@ class ImportadorExtratos:
             print(f"Total de registros a inserir: {len(dados_importados)}")
             for dados in dados_importados:
                 self.tree.insert("", "end", values=dados)
-                # for item in self.tree.get_children():
-                #     values = self.tree.item(item, 'values')
-                #     valor_idx = self.tree["columns"].index("ValorLEB")
-                #     valor = values[valor_idx]
-                #     if valor:
-                #         try:
-                #             valor_float = float(str(valor).replace('.', '').replace(',', '.'))
-                #             if valor_float < 0:
-                #                 self.tree.item(item, tags=('negativo',))
-                #         except ValueError:
-                #             print(f"Erro ao converter valor '{valor}' para float.")
                     
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -1759,10 +1687,6 @@ class ImportadorExtratos:
                         valor_total = valor_credito + valor_debito
                         valor_formatado = formatar_valor_brasileiro(valor_total)
                         print(f"Valor total calculado: {valor_formatado}")
-
-                        # valor_total = converter_para_float(valor)
-                        # valor_formatado = formatar_valor_brasileiro(valor_total)
-                        # print(f"Valor total calculado: {valor_formatado}")
 
                         saldo_total = converter_para_float(saldo)
                         saldo_formatado = formatar_valor_brasileiro(saldo_total)
@@ -1962,7 +1886,6 @@ class ImportadorExtratos:
                 return locale.format_string("%.2f", float(valor), grouping=True)
             except:
                 return valor
-            
         try:
             extensao = arquivo.lower().split('.')[-1]
             print(f"Extensão detectada: {extensao}")
@@ -2178,17 +2101,6 @@ class ImportadorExtratos:
             print(f"Total de registros a inserir: {len(dados_importados)}")
             for dados in dados_importados:
                 self.tree.insert("", "end", values=dados)
-                # for item in self.tree.get_children():
-                #     values = self.tree.item(item, 'values')
-                #     valor_idx = self.tree["columns"].index("ValorLEB")
-                #     valor = values[valor_idx]
-                #     if valor:
-                #         try:
-                #             valor_float = float(str(valor).replace('.', '').replace(',', '.'))
-                #             if valor_float < 0:
-                #                 self.tree.item(item, tags=('negativo',))
-                #         except ValueError:
-                #             print(f"Erro ao converter valor '{valor}' para float.")
                     
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -2509,13 +2421,6 @@ class ImportadorExtratos:
             self.tela_selecao_conta.root.destroy()
         self.root.destroy()
 
-
-
-        
-
-
-
-
 class TelaSelecaoConta:
     def __init__(self, root, callback):
         self.root = root
@@ -2526,11 +2431,11 @@ class TelaSelecaoConta:
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
-        self.title_label = tk.Label(root, text="Qual conta bancária irá importar?", font=("Roboto", 17, "bold"), bg='#f4f4f4') #? titulo
+        self.title_label = tk.Label(root, text="Qual conta bancária irá importar?", font=("Roboto", 17, "bold"), bg='#f4f4f4') 
         self.title_label.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="w")
 
         #* -------------------- CAMPOS DE INFORMAÇÕES -------------------- #
-        self.label_empresa = tk.Label(root, text="Empresa:", font=("Roboto", 10), bg='#f4f4f4') #? texto "empresa"
+        self.label_empresa = tk.Label(root, text="Empresa:", font=("Roboto", 10), bg='#f4f4f4') 
         self.label_empresa.grid(row=2, column=0, pady=1, padx=10, sticky="w")
 
         self.empresas = self.carregar_empresas()
@@ -2649,9 +2554,9 @@ class TelaSelecaoConta:
         conta = self.combobox_conta_contabil.get()
         if empresa and conta:
             arquivo = None
-            respostas_safra = {}  # dicionário para armazenar as respostas
+            respostas_safra = {}  #? dicionário para armazenar as respostas
             
-            # Verificar se é conta Safra
+            #? verificar se é conta Safra
             if "Safra" in conta:
                 resp1 = messagebox.askyesno("Banco Safra", "O extrato está no formato PDF?")
                 if resp1:
@@ -2661,7 +2566,7 @@ class TelaSelecaoConta:
                     if resp2:
                         resp3 = messagebox.askyesno("Banco Safra", "O extrato é conta vinculada?")
                         arquivo = filedialog.askopenfilename(filetypes=[("Arquivos Excel", "*.xls;*.xlsx")])
-                        # Armazenar as respostas para usar na acao_safra
+                        #? armazenar as respostas para usar na acao_safra
                         respostas_safra = {
                             "novo_formato": True,
                             "conta_vinculada": resp3
@@ -2684,7 +2589,7 @@ class TelaSelecaoConta:
                         messagebox.showinfo("Aviso", "Por favor, selecione um arquivo válido.")
 
             if arquivo:
-                # Passar as respostas junto com os outros parâmetros
+                #? passar as respostas junto com os outros parâmetros
                 self.callback(empresa, conta, arquivo, respostas_safra)
 
             self.root.destroy()
@@ -2708,11 +2613,11 @@ class TelaNovaConta:
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
-        self.title_label = tk.Label(root, text="Informações da conta bancária", font=("Roboto", 17, "bold"), bg='#f4f4f4') #? titulo
+        self.title_label = tk.Label(root, text="Informações da conta bancária", font=("Roboto", 17, "bold"), bg='#f4f4f4') 
         self.title_label.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="w")
 
         #* -------------------- CAMPOS DE INFORMAÇÕES -------------------- #
-        self.label_codigo_empresa = tk.Label(root, text="Código da Empresa:", font=("Roboto", 10), bg='#f4f4f4') #? texto "codigo da empresa"
+        self.label_codigo_empresa = tk.Label(root, text="Código da Empresa:", font=("Roboto", 10), bg='#f4f4f4') 
         self.label_codigo_empresa.grid(row=2, column=0, pady=1, padx=10, sticky="w")
         self.entry_codigo_empresa = tk.Entry(root, font=("Roboto", 10), width=50)
         self.entry_codigo_empresa.grid(row=3, column=0, pady=1, padx=10, sticky="w")
@@ -2780,18 +2685,18 @@ class TelaNovaEmpresa:
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
-        self.title_label = tk.Label(root, text="Informe os dados da empresa", font=("Roboto", 17, "bold"), bg='#f4f4f4') #? titulo
+        self.title_label = tk.Label(root, text="Informe os dados da empresa", font=("Roboto", 17, "bold"), bg='#f4f4f4') 
         self.title_label.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="w")
 
         #* -------------------- CAMPOS DE INFORMAÇÕES -------------------- #
-        self.label_codigo = tk.Label(root, text="Código:", font=("Roboto", 10), bg='#f4f4f4') #? texto "codigo"
+        self.label_codigo = tk.Label(root, text="Código:", font=("Roboto", 10), bg='#f4f4f4') 
         self.label_codigo.grid(row=2, column=0, pady=1, padx=10, sticky="w")
-        self.entry_codigo = tk.Entry(root, font=("Roboto", 10), width=65) #? caixa
+        self.entry_codigo = tk.Entry(root, font=("Roboto", 10), width=65) 
         self.entry_codigo.grid(row=3, column=0, pady=1, padx=10, sticky="w")
 
-        self.label_razao_social = tk.Label(root, text="Razão Social:", font=("Roboto", 10), bg='#f4f4f4') #? texto "razao social"
+        self.label_razao_social = tk.Label(root, text="Razão Social:", font=("Roboto", 10), bg='#f4f4f4') 
         self.label_razao_social.grid(row=4, column=0, pady=1, padx=10, sticky="w")
-        self.entry_razao_social = tk.Entry(root, font=("Roboto", 10), width=65) #?   caixa
+        self.entry_razao_social = tk.Entry(root, font=("Roboto", 10), width=65) 
         self.entry_razao_social.grid(row=5, column=0, pady=1, padx=10, sticky="w")
 
         #* -------------------- BOTÕES PRINCIPAIS -------------------- #
