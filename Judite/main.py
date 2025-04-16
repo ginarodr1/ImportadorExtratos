@@ -1608,6 +1608,97 @@ class ImportadorExtratos:
 
             else:  #! xlsx
                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+                wb = openpyxl.load_workbook(arquivo, data_only=True)
+                sheet = wb.active
+                print(f"Planilha ativa: {sheet.title}")
+
+                print("\nBuscando saldo inicial...")
+                saldo_inicial_celula = sheet['F10'].value
+                print(f"Valor bruto encontrado em F10: {saldo_inicial_celula}")
+
+                if isinstance(saldo_inicial_celula, str):
+                    saldo_inicial = float(saldo_inicial_celula.replace(".", "").replace(",", "."))
+                else:
+                    saldo_inicial = float(saldo_inicial_celula)
+
+                saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                print(f"Saldo inicial formatado: R${saldo_inicial_frmt}")
+
+                resposta = messagebox.askyesno("Confirmação de saldo", f"O saldo inicial é de R${saldo_inicial_frmt}?")
+
+                if not resposta:
+                    print("Usuário não confirmou o saldo inicial, solicitando entrada manual.")
+                    saldo_inicial_manual = simpledialog.askstring("Entrada de Saldo", "Insira o saldo inicial correto:")
+                    if saldo_inicial_manual:
+                        try:
+                            saldo_inicial = float(saldo_inicial_manual.replace(".", "").replace(",", "."))
+                            saldo_inicial_frmt = locale.format_string("%.2f", saldo_inicial, grouping=True)
+                        except ValueError:
+                            messagebox.showerror("Erro", "Valor de saldo inicial inválido.")
+                            return
+                    else:
+                        messagebox.showinfo("Aviso", "Processo cancelado pelo usuário.")
+                        return
+                    
+                self.saldo_inicial_entry.delete(0, tk.END)
+                self.saldo_inicial_entry.insert(0, saldo_inicial_frmt)
+
+                saldo_final_calculado = saldo_inicial
+
+                print("\n=== INICIANDO PROCESSAMENTO DAS LINHAS ===")
+                for row in range(11, sheet.max_row + 1):
+                    try:
+                        print(f"\nProcessando linha {row}:")
+                        data = sheet.cell(row=row, column=1).value
+                        print(f"Data encontrada: {data}")
+
+                        historico = sheet.cell(row=row, column=3).value
+                        num_doc = sheet.cell(row=row, column=2).value
+                        debito = sheet.cell(row=row, column=4).value
+                        credito = sheet.cell(row=row, column=5).value
+                        valor = sheet.cell(row=row, column=5).value
+                        saldo = sheet.cell(row=row, column=6).value
+
+                        print(f"Valores lidos:")
+                        print(f"  Histórico: {historico}")
+                        print(f"  N° Doc: {num_doc}")
+                        print(f"  Débito: {debito}")
+                        print(f"  Crédito: {credito}")
+                        print(f"  Valor: {valor}")
+                        print(f"  Saldo: {saldo}")
+
+                        def converter_para_float(valor):
+                            if valor is None or valor == "":
+                                return 0.0
+                            if isinstance(valor, str):
+                                valor = valor.replace(".", "").replace(",", ".")
+                            try:
+                                return float(valor)
+                            except ValueError:
+                                return 0.0
+                            
+                        valor_credito = converter_para_float(credito)
+                        valor_debito = converter_para_float(debito)
+                        valor_total = valor_credito + valor_debito
+                        valor_formatado = formatar_valor_brasileiro(valor_total)
+                        print(f"Valor total calculado: {valor_formatado}")
+
+                        saldo_total = converter_para_float(saldo)
+                        saldo_formatado = formatar_valor_brasileiro(saldo_total)
+                        print(f"Saldo total formatado: {saldo_total}")
+
+                        dados_importados.append([
+                            data, historico, num_doc, valor_formatado, saldo_formatado,
+                            "", "", "", "", "", "", "", ""
+                        ])
+
+                        saldo_final_calculado += valor_total
+                        print(f"Novo saldo calculado: {saldo_final_calculado}")
+                            
+                    except Exception as e:
+                        print(f"ERRO ao processar linha {row}:")
+                        print(f"Detalhes do erro: {str(e)}")
+                        continue
 
             print("\n=== ATUALIZANDO INTERFACE ===")
             print("Formatando saldo final...")
