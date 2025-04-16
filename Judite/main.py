@@ -659,6 +659,12 @@ class ImportadorExtratos:
                     f"Erro: {str(e)}")
                 return
 
+
+
+
+
+
+
     def acao_safra(self, arquivo, respostas_safra):
         print("\n=== INÍCIO DO PROCESSAMENTO: SAFRA ===")
         print(f"Arquivo recebido: {arquivo}")
@@ -687,6 +693,35 @@ class ImportadorExtratos:
                                 print("Abrindo workbook...")
                                 wb = xlrd.open_workbook(arquivo)
                                 sheet = wb.sheet_by_index(0)
+
+                                texto_periodo = sheet.cell_value(5, 1)
+                                print(f"Texto do período: {texto_periodo}")
+
+                                def extrair_ano(texto):
+                                    match = re.search(r'\d{2}/\d{2}/(\d{4})', texto)
+                                    if match:
+                                        return int(match.group(1))
+                                    return datetime.now().year
+                                
+                                ano_extrato = extrair_ano(texto_periodo)
+                                print(f"Ano extraído do período: {ano_extrato}")
+
+                                meses_pt = {
+                                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+                                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+                                }
+
+                                def converter_data_pt(data_str, ano):
+                                    try:
+                                        dia, mes_abrev = data_str.strip().split('/')
+                                        mes = meses_pt.get(mes_abrev.lower())
+                                        if mes:
+                                            data = datetime(ano, mes, int(dia))
+                                            return data.strftime('%d/%m/%Y')
+                                    except Exception as e:
+                                        print(f"Erro ao converter data '{data_str}': {e}")
+                                    return data_str
+
                                 print(f"Planilha aberta: {sheet.name}")
                                 print(f"Dimensões? {sheet.nrows} linhas x {sheet.ncols} colunas")
 
@@ -772,9 +807,15 @@ class ImportadorExtratos:
                                         print(f"Valor total calculado: {valor_formatado}")
 
                                         if isinstance(data, float):
-                                            print("Convertendo data de float para string...")
                                             data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
-                                            print(f"Data convertida: {data}")
+                                        elif isinstance(data, str):
+                                            if re.match(r'\d{2}/\d{2}', data):  # Ex: 02/01
+                                                try:
+                                                    data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
+                                                except Exception as e:
+                                                    print(f"Erro ao converter data '{data}': {e}")
+                                            elif re.match(r'\d{2}/[a-zA-Z]{3}', data):  # Ex: 02/jan
+                                                data = converter_data_pt(data, ano_extrato)
                             
                                         print("Adicionando linha aos dados importados...")
                                         dados_importados.append([
@@ -797,7 +838,36 @@ class ImportadorExtratos:
                                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                                 sheet = wb.active
                                 print(f"Planilha ativa: {sheet.title}")
-                    
+
+                                texto_periodo = sheet["B6"].value
+                                print(f"Texto do período: {texto_periodo}")
+
+                                def extrair_ano(texto):
+                                    match = re.search(r'\d{2}/\d{2}/(\d{4})', texto)
+                                    if match:
+                                        return int(match.group(1))
+                                    return datetime.now().year
+                                
+                                ano_extrato = extrair_ano(texto_periodo)
+                                print(f"Ano extraído do período: {ano_extrato}")
+
+# === Mapeamento dos meses em português ===
+                                meses_pt = {
+                                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+                                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+                                }
+
+                                def converter_data_pt(data_str, ano):
+                                    try:
+                                        dia, mes_abrev = data_str.strip().split('/')
+                                        mes = meses_pt.get(mes_abrev.lower())
+                                        if mes:
+                                            data = datetime(ano, mes, int(dia))
+                                            return data.strftime('%d/%m/%Y')
+                                    except Exception as e:
+                                        print(f"Erro ao converter data '{data_str}': {e}")
+                                    return data_str
+
                                 # Lê o saldo inicial (F10)
                                 print("\nBuscando saldo inicial...")
                                 saldo_inicial_celula = sheet['F9'].value
@@ -891,6 +961,17 @@ class ImportadorExtratos:
                                         #valor_debito = converter_para_float(debito)
                                         valor_total = valor#_credito + valor_debito
                                         print(f"Valor total calculado: {valor_total}")
+
+                                        if isinstance(data, datetime):
+                                            data = data.strftime("%d/%m/%Y")
+                                        elif isinstance(data, str):
+                                            if re.match(r"\d{2}/[a-zA-Z]{3}", data):  # ex: 02/jan
+                                                data = converter_data_pt(data, ano_extrato)
+                                            elif re.match(r"\d{2}/\d{2}", data):  # ex: 02/01
+                                                try:
+                                                    data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
+                                                except Exception as e:
+                                                    print(f"Erro ao converter data '{data}': {e}")
                             
                                         dados_importados.append([
                                             data, historico, num_doc, valor_total, valor,
@@ -951,6 +1032,35 @@ class ImportadorExtratos:
                                 wb = xlrd.open_workbook(arquivo)
                                 sheet = wb.sheet_by_index(0)
                                 print(f"Planilha aberta: {sheet.name}")
+
+                                texto_periodo = sheet.cell_value(5, 0)
+                                print(f"Texto do período: {texto_periodo}")
+
+                                def extrair_ano(texto):
+                                    match = re.search(r'\d{2}/\d{2}/(\d{4})', texto)
+                                    if match:
+                                        return int(match.group(1))
+                                    return datetime.now().year
+                                
+                                ano_extrato = extrair_ano(texto_periodo)
+                                print(f"Ano extraído do período: {ano_extrato}")
+
+                                meses_pt = {
+                                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+                                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+                                }
+
+                                def converter_data_pt(data_str, ano):
+                                    try:
+                                        dia, mes_abrev = data_str.strip().split('/')
+                                        mes = meses_pt.get(mes_abrev.lower())
+                                        if mes:
+                                            data = datetime(ano, mes, int(dia))
+                                            return data.strftime('%d/%m/%Y')
+                                    except Exception as e:
+                                        print(f"Erro ao converter data '{data_str}': {e}")
+                                    return data_str
+
                                 print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
 
                                 print("\nBuscando saldo inicial...")
@@ -1029,9 +1139,15 @@ class ImportadorExtratos:
                                         print(f"Valor total calculado: {valor_formatado}")
 
                                         if isinstance(data, float):
-                                            print("Convertendo data de float para string...")
                                             data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
-                                            print(f"Data convertida: {data}")
+                                        elif isinstance(data, str):
+                                            if re.match(r'\d{2}/\d{2}', data):  # Ex: 02/01
+                                                try:
+                                                    data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
+                                                except Exception as e:
+                                                    print(f"Erro ao converter data '{data}': {e}")
+                                            elif re.match(r'\d{2}/[a-zA-Z]{3}', data):  # Ex: 02/jan
+                                                data = converter_data_pt(data, ano_extrato)
                             
                                         print("Adicionando linha aos dados importados...")
                                         dados_importados.append([
@@ -1053,6 +1169,35 @@ class ImportadorExtratos:
                                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                                 sheet = wb.active
                                 print(f"Planilha ativa: {sheet.title}")
+
+                                texto_periodo = sheet["A6"].value
+                                print(f"Texto do período: {texto_periodo}")
+
+                                def extrair_ano(texto):
+                                    match = re.search(r'\d{2}/\d{2}/(\d{4})', texto)
+                                    if match:
+                                        return int(match.group(1))
+                                    return datetime.now().year
+                                
+                                ano_extrato = extrair_ano(texto_periodo)
+                                print(f"Ano extraído do período: {ano_extrato}")
+
+# === Mapeamento dos meses em português ===
+                                meses_pt = {
+                                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+                                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+                                }
+
+                                def converter_data_pt(data_str, ano):
+                                    try:
+                                        dia, mes_abrev = data_str.strip().split('/')
+                                        mes = meses_pt.get(mes_abrev.lower())
+                                        if mes:
+                                            data = datetime(ano, mes, int(dia))
+                                            return data.strftime('%d/%m/%Y')
+                                    except Exception as e:
+                                        print(f"Erro ao converter data '{data_str}': {e}")
+                                    return data_str
 
                                 print("\nBuscando saldo inicial...")
                                 saldo_inicial_celula = sheet['H13'].value
@@ -1143,6 +1288,17 @@ class ImportadorExtratos:
                                             
                                         valor_total = valor#_credito + valor_debito
                                         print(f"Valor total calculado: {valor_total}")
+
+                                        if isinstance(data, datetime):
+                                            data = data.strftime("%d/%m/%Y")
+                                        elif isinstance(data, str):
+                                            if re.match(r"\d{2}/[a-zA-Z]{3}", data):  # ex: 02/jan
+                                                data = converter_data_pt(data, ano_extrato)
+                                            elif re.match(r"\d{2}/\d{2}", data):  # ex: 02/01
+                                                try:
+                                                    data = datetime.strptime(f"{data}/{ano_extrato}", "%d/%m/%Y").strftime("%d/%m/%Y")
+                                                except Exception as e:
+                                                    print(f"Erro ao converter data '{data}': {e}")
 
                                         dados_importados.append([
                                             data, historico, num_doc, valor_total, valor,
@@ -1488,11 +1644,37 @@ class ImportadorExtratos:
                 except:
                     return valor
 
-            if extensao == 'xls':
+            if extensao == 'xls': #! SE O ARQUIVO É XLS
                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
                 wb = xlrd.open_workbook(arquivo)
                 sheet = wb.sheet_by_index(0)
                 print(f"Planilha aberta: {sheet.name}")
+
+                meses_pt = {
+                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+                }
+
+                def converter_data_pt(data_str, ano):
+                    try:
+                        dia, mes_abrev = data_str.strip().split('/')
+                        mes = meses_pt.get(mes_abrev.lower())
+                        if mes:
+                            data = datetime(ano, mes, int(dia))
+                            return data.strftime('%d/%m/%Y')
+                    except Exception as e:
+                        print(f"Erro ao converter data '{data_str}': {e}")
+                        return data_str
+                    
+                texto_periodo = sheet.cell_value(5, 0)
+                print(f"Texto do período: {texto_periodo}")
+                def extrair_ano(texto):
+                    match = re.search(r'\d{2}/\d{2}/(\d{4})', texto)
+                    if match:
+                        return datetime.now().year
+                    ano_extrato = extrair_ano(texto_periodo)
+                    print(f"Ano extraído do período: {ano_extrato}")
+
                 print(f"Dimensões: {sheet.nrows} linhas x {sheet.ncols} colunas")
 
                 print("\nBuscando saldo inicial...")
@@ -1587,8 +1769,12 @@ class ImportadorExtratos:
                         print(f"Saldo total calculado: {saldo_formatado}")
 
                         if isinstance(data, float):
-                            print("Convertendo data de float para string...")
+                            print("Convertendo data float padrão Excel.")
                             data = xlrd.xldate_as_datetime(data, wb.datemode).strftime('%d/%m/%Y')
+                            print(f"Data convertido: {data}")
+                        elif isinstance(data, str):
+                            print(f"Convertendo data string com mês pt-br: {data}")
+                            data = converter_data_pt(data, ano_extrato)
                             print(f"Data convertida: {data}")
                             
                         print("Adicionando linha aos dados importados...")
@@ -1606,11 +1792,37 @@ class ImportadorExtratos:
                         traceback.print_exc()
                         continue
 
-            else:  #! xlsx
+            else:  #! SE O ARQUIVO É XLSX
                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                 sheet = wb.active
                 print(f"Planilha ativa: {sheet.title}")
+
+                meses_pt = {
+                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+                }
+
+                def converter_data_pt(data_str, ano):
+                    try:
+                        dia, mes_abrev = data_str.strip().split('/')
+                        mes = meses_pt.get(mes_abrev.lower())
+                        if mes:
+                            data = datetime(int(ano), mes, int(dia))
+                            return data.strftime('%d/%m/%Y')
+                    except Exception as e:
+                        print(f"Erro ao converter data '{data_str}': {e}")
+                    return data_str
+                
+                texto_periodo = sheet["A6"].value
+                print(f"Texto do período: {texto_periodo}")
+                def extrair_ano(texto):
+                    match = re.search(r'\d{2}/\d{2}/(\d{4})', texto)
+                    if match:
+                        return int(match.group(1))
+                    return datetime.now().year
+                ano_extrato = extrair_ano(texto_periodo)
+                print(f"Ano extraído do período: {ano_extrato}")
 
                 print("\nBuscando saldo inicial...")
                 saldo_inicial_celula = sheet['F10'].value
@@ -1686,6 +1898,14 @@ class ImportadorExtratos:
                         saldo_total = converter_para_float(saldo)
                         saldo_formatado = formatar_valor_brasileiro(saldo_total)
                         print(f"Saldo total formatado: {saldo_total}")
+
+                        if isinstance(data, datetime):
+                            print("Data já está no formato datetime...")
+                            data = data.strftime("%d/%m/%Y")
+                        elif isinstance(data, str):
+                            print(f"Convertendo data abreviada em pt-br: {data}")
+                            data = converter_data_pt(data, ano_extrato)
+                            print(f"Data convertido: {data}")
 
                         dados_importados.append([
                             data, historico, num_doc, valor_formatado, saldo_formatado,
