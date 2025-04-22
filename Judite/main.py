@@ -150,6 +150,9 @@ class ImportadorExtratos:
         
         self.tree.tag_configure('negativo', foreground='red') #? torna os valores negativos em vermelho
 
+        self.tree.tag_configure('linha_par', background='#F0F0F0') #? cinza
+        self.tree.tag_configure('linha_impar', background='#ffffff') #? branco
+
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
         self.tree.heading("DescricaoLEB", text="Descrição")
@@ -613,8 +616,9 @@ class ImportadorExtratos:
                 print("Inserindo dados na Treeview...")
                 print(f"Total de registros a inserir: {len(dados_importados)}")
 
-                for dados in dados_importados:
-                    self.tree.insert("", "end", values=dados)
+                for i, dados in enumerate(dados_importados):
+                    tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                    self.tree.insert("", "end", values=dados, tags=(tag,))
                     
                 print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                 print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -953,8 +957,10 @@ class ImportadorExtratos:
                     
                             print("Inserindo dados na Treeview...")
                             print(f"Total de registros a inserir: {len(dados_importados)}")
-                            for dados in dados_importados:
-                                self.tree.insert("", "end", values=dados)
+
+                            for i, dados in enumerate(dados_importados):
+                                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                                self.tree.insert("", "end", values=dados, tags=(tag,))
                     
                             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -1275,8 +1281,10 @@ class ImportadorExtratos:
                     
                             print("Inserindo dados na Treeview...")
                             print(f"Total de registros a inserir: {len(dados_importados)}")
-                            for dados in dados_importados:
-                                self.tree.insert("", "end", values=dados)
+
+                            for i, dados in enumerate(dados_importados):
+                                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                                self.tree.insert("", "end", values=dados, tags=(tag,))
 
                             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -1539,8 +1547,10 @@ class ImportadorExtratos:
 
             print("Inserindo dados na Treeview...")
             print(f"Total de registros a inserir: {len(dados_importados)}")
-            for dados in dados_importados:
-                self.tree.insert("", "end", values=dados)
+
+            for i, dados in enumerate(dados_importados):
+                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                self.tree.insert("", "end", values=dados, tags=(tag,))
                     
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -1859,8 +1869,10 @@ class ImportadorExtratos:
 
             print("Inserindo dados na Treeview...")
             print(f"Total de registros a inserir: {len(dados_importados)}")
-            for dados in dados_importados:
-                self.tree.insert("", "end", values=dados)
+
+            for i, dados in enumerate(dados_importados):
+                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                self.tree.insert("", "end", values=dados, tags=(tag,))
 
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -2099,8 +2111,10 @@ class ImportadorExtratos:
                     
             print("Inserindo dados na Treeview...")
             print(f"Total de registros a inserir: {len(dados_importados)}")
-            for dados in dados_importados:
-                self.tree.insert("", "end", values=dados)
+
+            for i, dados in enumerate(dados_importados):
+                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                self.tree.insert("", "end", values=dados, tags=(tag,))
                     
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -2329,8 +2343,10 @@ class ImportadorExtratos:
 
             print("Inserindo dados na Treeview...")
             print(f"Total de registros a inserir: {len(dados_importados)}")
-            for dados in dados_importados:
-                self.tree.insert("", "end", values=dados)
+
+            for i, dados in enumerate(dados_importados):
+                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                self.tree.insert("", "end", values=dados, tags=(tag,))
 
         except Exception as e:
             print("\n=== ERRO FATAL ===")
