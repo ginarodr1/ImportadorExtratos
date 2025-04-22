@@ -131,6 +131,12 @@ class ImportadorExtratos:
         self.linhadeajuda_label = tk.Label(root, text="Coluna 5", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
         self.linhadeajuda_label.grid(row=1, column=5)
 
+        self.busca_btn = tk.Button(root, text="Buscar", command=self.buscar_termo_treeview, font=("Roboto", 9), bg='#2196F3', fg="white", relief="groove")
+        self.busca_btn.grid(row=2, column=2, padx=70, sticky="w")
+
+        self.busca_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
+        self.busca_entry.grid(row=2, column=2, padx=125, sticky="w")
+
         #* -------------------- TREEVIEW PARA EXIBIR OS DADOS IMPORTADOS -------------------- #
         self.frame_tree = tk.Frame(root)
         self.frame_tree.grid(row=7, column=0, columnspan=6, pady=5, padx=10, sticky="nsew")
@@ -152,6 +158,8 @@ class ImportadorExtratos:
 
         self.tree.tag_configure('linha_par', background='#F0F0F0') #? cinza
         self.tree.tag_configure('linha_impar', background='#ffffff') #? branco
+
+        self.tree.tag_configure('destaque', background='#ffff99') #? amarelo claro
 
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
@@ -193,6 +201,19 @@ class ImportadorExtratos:
         root.grid_columnconfigure(3, weight=1)
         root.grid_columnconfigure(4, weight=1)
         root.grid_columnconfigure(5, weight=1)
+
+    def buscar_termo_treeview(self):
+        termo = self.busca_entry.get().strip().lower()
+
+        for item in self.tree.get_children():
+            valores = self.tree.item(item, 'values')
+
+            if any(termo in str(valor).lower() for valor in valores):
+                self.tree.item(item, tags=('destaque',))
+            else:
+                index = self.tree.index(item)
+                tag = 'linha_par' if index % 2 == 0 else 'linha_par'
+                self.tree.item(item, tags=(tag,))
 
     def mostrar_selecao_conta(self): #? cria janela toplevel
         janela_selecao_conta = tk.Toplevel(self.root)
