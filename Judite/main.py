@@ -11,6 +11,7 @@ from datetime import datetime, date
 import traceback
 import xlrd
 from unidecode import unidecode
+from fuzzywuzzy import process, fuzz
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
@@ -287,6 +288,7 @@ class ImportadorExtratos:
 
         #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
     def classificar_dados(self):
+        print("\n=== PROCESSO DE CLASSIFICAÇÃO ===")
         conta_bancaria = self.conta_entry.get()
         incluir_banco = messagebox.askyesno("Classificar Dados", "Deseja incluir a identificação do banco no histórico contábil?")
         
@@ -326,27 +328,47 @@ class ImportadorExtratos:
             lambda x: unidecode(str(x).strip().upper())
         )
 
+        df_banco_tipo_normalizado = self.df_banco_dados['Tipo'].apply(lambda x: str(x).strip().upper())
+
         #? verifica os itens na treeview para classificar débito e crédito
-        for item in self.tree.get_children():
+        for idx, item in enumerate(self.tree.get_children(), start=1):
             values = self.tree.item(item, 'values')
             descricao_idx = self.tree["columns"].index("LancamentoLC")
-            descricao = values[descricao_idx]  #? a descricao está na segunda coluna
+            valor_idx = self.tree["columns"].index("ValorLEB")
+
+            descricao = values[descricao_idx]
+            valor = float(values[valor_idx].replace(",", "."))
+
+            tipo = "D" if valor < 0 else "C" #? D se o valor for menor que 0, C se for maior
 
             descricao_normalizada = unidecode(str(descricao).strip().upper())
 
-            correspondencia = self.df_banco_dados[
-                df_descricoes_normalizadas == descricao_normalizada
-            ]
+            df_filtrado = self.df_banco_dados[self.df_banco_dados["Tipo"].str.upper() == tipo]
+            df_descricoes_normalizadas = df_filtrado["Descricao"].apply(lambda x: unidecode(str(x).strip().upper()))
 
-            if not correspondencia.empty: #? obter os valores correspondentes usando índices
-                descricao_banco = correspondencia.iloc[0, 5]  #? coluna F (descricao) no banco
-                debito = correspondencia.iloc[0, 6]  #? coluna G (debito) no banco
-                credito = correspondencia.iloc[0, 9]  #? coluna J (credito) no banco
+            melhores_matches = []
+            for i, descricao_banco in enumerate(df_descricoes_normalizadas):
+                score = fuzz.partial_ratio(descricao_normalizada, descricao_banco)
+                if score >= 80:
+                    melhores_matches.append((descricao_banco, score, i))
+
+            if melhores_matches:
+                melhores_matches.sort(key=lambda x: (x[1], len(x[0])), reverse=True)
+                descricao_mais_parecida, score_usado, indice_match = melhores_matches[0]
+                correspondencia = df_filtrado.iloc[indice_match]
+                                                      
+                debito = correspondencia.iloc[6]  #? coluna G (debito) no banco
+                credito = correspondencia.iloc[9]  #? coluna J (credito) no banco
 
                 if "#BCO" in str(debito):
                     debito = conta_bancaria
                 if "#BCO" in str(credito):
                     credito = conta_bancaria
+
+                print(f"📌 Linha {idx} 📄 Treeview: {descricao}")
+                print(f"🎒 CSV: {descricao_mais_parecida}")
+                print(f"🔍 Tipo: {tipo} 🔴 Débito: {debito} 🟢 Crédito: {credito} 🎯 Similaridade: {score}")
+                print("-" * 60)
 
                 #? atualizar apenas as colunas relevantes
                 novos_valores = list(values)  #? copiar os valores existentes
