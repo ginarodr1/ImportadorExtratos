@@ -133,7 +133,6 @@ class ImportadorExtratos:
 
         self.busca_btn = tk.Button(root, text="Buscar", command=self.buscar_termo_treeview, font=("Roboto", 9), bg='#2196F3', fg="white", relief="groove")
         self.busca_btn.grid(row=2, column=2, padx=70, sticky="w")
-
         self.busca_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
         self.busca_entry.grid(row=2, column=2, padx=125, sticky="w")
 
@@ -302,52 +301,12 @@ class ImportadorExtratos:
                     print(f"Conta ativo encontrada: {conta_ativo}")
         except Exception as e:
             print(f"Erro ao carregar contas.csv: {e}")
-
-        padroes_lancamentos = { #? dicionário de padrões de lançamentos
-            #! BRADESCO
-            "TRANSF CC PARA CC PJ": "TRANSF CC PARA CC PJ", 
-            "TED-TRANSF ELET DISPON REMET.": "TED-TRANSF ELET DISPON REMET.",
-            "TRANSFERENCIA PIX REM:": "TRANSFERENCIA PIX REM:",
-            "TRANSFERENCIA PIX DES:": "TRANSFERENCIA PIX DES:",
-            "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS": "TRANSFERENCIA PIX REM: SHOCK METAIS NAO FERRAGENS",
-            "ENCARGOS C GARANTIA ENCARGO": "ENCARGOS C GARANTIA ENCARGO",
-            "ENCARGOS C GARANTIDA ENCARGO CONTR": "ENCARGOS C GARANTIDA ENCARGO", 
-            "ENCARGOS C GARANTIDA IOF     CONTR": "ENCARGOS C GARANTIDA IOF",
-            "TARIFA REGISTRO COBRANCA": "TARIFA REGISTRO COBRANCA",
-            "PAGTO ELETRON  COBRANCA": "PAGTO ELETRON  COBRANCA",
-            "VISA CREDITO": "VISA CREDITO",
-            "RECEBIMENTO FORNECEDOR": "RECEBIMENTO FORNECEDOR",
-            "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET": "PAGTO ELETRONICO TRIBUTO NET EMPR LIC ELET",
-            "OPERACAO CAPITAL GIRO": "OPERACAO CAPITAL GIRO",
-            "PARCELA OPER CREDITO CONTR": "PARCELA OPER CREDITO CONTR",
-            "PAGTO ELETRONICO TRIBUTO INTERNET": "PAGTO ELETRONICO TRIBUTO INTERNET",
-            "TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO": "TAR",
-            "TED D CC HBANK* DEST. SHOCK METAIS NAO FER": "TED D CC HBANK* DEST. SHOCK METAIS NAO FER",
-            "TAR PACOTE MENSAL BASICO": "Tarifa Bancária",
-            "RECEBIMENTO TED D REMET.SHOCK METAIS N FERRO": "RECEBIMENTO TED D REMET.SHOCK METAIS N FERRO",
-            "TRANSF.EXCEDENTEGARANTIA": "TRANSF.EXCEDENTEGARANTIA",
-            "PARCELA OPER CREDITO CONTR": "PARCELA OPER CREDITO CONTR",
-            "PIX QR CODE DINAMICO DES:": "PIX QR CODE DINAMICO",
-            "TARIFA BANCARIA TRANSF PGTO PIX": "TARIFA BANCARIA",
-            "PAGTO ELETRON COBRANCA CONTR": "PAGTO ELETRON COBRANCA",
-            "PAGTO ELETRON COBRANCA": "PAGTO ELETRON COBRANCA",
-            "TAR COMANDADA COBRANCA": "Tarifa Bancária",
-        }
-
         
         for item in self.tree.get_children(): #? processar cada item na treeview
             values = list(self.tree.item(item, 'values'))
             descricao = values[self.tree["columns"].index("DescricaoLEB")] #? copiar e simplificar descrições
             
             lancamento_simplificado = descricao #? procurar por padrões conhecidos
-
-            if descricao.startswith("TARIFA AUTORIZ COBRANCA TR TIT PAGO CARTORIO"):
-                lancamento_simplificado = "TAR"
-            else:
-                for padrao in padroes_lancamentos:
-                    if descricao.startswith(padrao):
-                        lancamento_simplificado = padroes_lancamentos[padrao]
-                        break
             
             lancamento_idx = self.tree["columns"].index("LancamentoLC") #? atualizar o lançamento
             values[lancamento_idx] = lancamento_simplificado
