@@ -287,6 +287,22 @@ class ImportadorExtratos:
             self.tree.set(item, coluna_destino, valor_origem)
 
         #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
+    def corrigir_valor(self, valor_raw):
+        valor_raw = str(valor_raw).strip()
+        valor_filtrado = re.sub(r"[^\d,.-]", "", valor_raw)
+
+        partes = valor_filtrado.split(".")
+        if len(partes) > 2:
+            valor_filtrado = "".join(partes[:-1]) + "." + partes[-1]
+
+        valor_str = valor_filtrado.replace(",", ".")
+
+        try:
+            return float(valor_str)
+        except ValueError:
+            print(f"❌ Valor inválido mesmo após correção: '{valor_raw}' → '{valor_str}'")
+            return 0.0
+
     def classificar_dados(self):
         print("\n=== PROCESSO DE CLASSIFICAÇÃO ===")
         conta_bancaria = self.conta_entry.get()
@@ -337,7 +353,8 @@ class ImportadorExtratos:
             valor_idx = self.tree["columns"].index("ValorLEB")
 
             descricao = values[descricao_idx]
-            valor = float(values[valor_idx].replace(",", "."))
+            valor_raw = values[valor_idx]
+            valor = self.corrigir_valor(valor_raw)
 
             tipo = "D" if valor < 0 else "C" #? D se o valor for menor que 0, C se for maior
 
@@ -918,6 +935,8 @@ class ImportadorExtratos:
                                             except ValueError:
                                                 return 0.0
                             
+                                        valor_total = converter_para_float(valor)
+                                        valor_formatado = formatar_valor_brasileiro(valor_total)
                                         print(f"Valor total calculado: {valor_total}")
 
                                         if isinstance(data, datetime):
@@ -932,11 +951,11 @@ class ImportadorExtratos:
                                                     print(f"Erro ao converter data '{data}': {e}")
                             
                                         dados_importados.append([
-                                            data, historico, num_doc, valor_total, valor,
+                                            data, historico, num_doc, valor_formatado, "",
                                             "", "", "", "", "", "", "", "", ""
                                         ])
                             
-                                        saldo_final_calculado += valor_total
+                                        saldo_final_calculado += valor_formatado
                                         print(f"Novo saldo calculado: {saldo_final_calculado}")
                             
                                     except Exception as e:
@@ -1241,7 +1260,8 @@ class ImportadorExtratos:
                                             except ValueError:
                                                 return 0.0
                                             
-                                        valor_total = valor
+                                        valor_total = converter_para_float(valor)
+                                        valor_formatado = formatar_valor_brasileiro(valor_total)
                                         print(f"Valor total calculado: {valor_total}")
 
                                         if isinstance(data, datetime):
@@ -1256,7 +1276,7 @@ class ImportadorExtratos:
                                                     print(f"Erro ao converter data '{data}': {e}")
 
                                         dados_importados.append([
-                                            data, historico, num_doc, valor_total, valor,
+                                            data, historico, num_doc, valor_formatado, "",
                                             "", "", "", "", "", "", "", "", ""
                                         ])
 
@@ -2642,11 +2662,19 @@ class TelaNovaConta:
 
         self.label_bancos = tk.Label(root, text="Banco:", font=("Roboto", 10), bg='#f4f4f4')
         self.label_bancos.grid(row=4, column=0, pady=1, padx=10, sticky="w")
-        self.bancos = ["001 - Banco do Brasil", "077 - Banco Inter", "104 - Banco Caixa Eletrônica", 
-                       "237 - Banco Bradesco", "274 - Banco Grafeno", "290 - Banco Pagseguro", 
-                       "336 - Banco C6 Bank", "341 - Banco Itau", "353 - Banco Santander", 
-                       "399 - Banco HSBC", "422 - Banco Safra", "505 - Credit Suisse", 
-                       "707 - Banco Daycoval", "748 - Banco Sicredi"]
+        self.bancos = ["001 - Banco do Brasil", "033 - Banco Santander", "041 - Banco Banrisul", 
+                       "077 - Banco Inter", "102 - Banco Xp Investimentos", "104 - Banco Caixa Eletrônica", 
+                       "106 - Banco Itabanco", "197 - Banco Stone Pagamentos", "208 - Banco BTG Pactual", 
+                       "212 - Banco Original", "218 - Banco Bs2", "237 - Banco Bradesco", 
+                       "247 - Banco Bancoob", "260 - Banco Nu Pagamentos", "274 - Banco Grafeno", 
+                       "290 - Banco Pagseguro", "308 - Banco Comercial Bancesa", "323 - Banco Mercado Pago", 
+                       "336 - Banco C6 Bank", "341 - Banco Itau", "348 - Banco Xp", 
+                       "351 - Banco Santander Brasil", "353 - Banco Santander", "371 - Banco Warren Corretora", 
+                       "399 - Banco HSBC", "403 - Cora Sociedade De Crédito Direto", "422 - Banco Safra", 
+                       "450 - Banco FitBank", "461 - Banco Asaas", "505 - Credit Suisse", 
+                       "637 - Banco Sofisa", "643 - Banco Pine", "707 - Banco Daycoval", 
+                       "745 - Banco Citibank", "748 - Banco Sicredi", "752 - Banco Bnp Paribas Brasil", 
+                       "756 - Banco Sicoob", "094 - Banco Finaxis", "128 - Banco Ms Bank"]
         self.combobox_banco = ttk.Combobox(root, values=self.bancos, font=("Roboto", 10), width=62)
         self.combobox_banco.grid(row=5, column=0, pady=1, padx=10, sticky="w")
 
