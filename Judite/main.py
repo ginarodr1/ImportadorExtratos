@@ -25,12 +25,16 @@ class ImportadorExtratos:
         self.root = root
         self.root.title("Importador de Extratos Bancários")
         self.root.geometry("1000x600")
-        self.root.config(bg='#D9D9D9')
+        self.root.config(bg='#313131')
         self.root.state("zoomed")
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
         csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\lancamentoscontas1.csv"
         self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
+
+        self.root.tk.call("source", "C:/Users/regina.santos/Desktop/Automacao/Forest-ttk-theme/forest-dark.tcl")
+        style = ttk.Style(self.root)
+        style.theme_use("forest-dark")
 
         for i in range(6):
             root.grid_columnconfigure(i, weight=0)
@@ -41,103 +45,100 @@ class ImportadorExtratos:
 
         #! -------------------- TÍTULO PRINCIPAL -------------------- #
 
-        self.title_label = tk.Label(root, text="Importador de Extratos", font=("Roboto", 17, "bold"), bg='#D9D9D9')
+        self.title_label = tk.Label(root, text="Importador de Extratos", font=("Roboto", 17, "bold"), bg='#313131', fg="white")
         self.title_label.grid(row=3, column=0, padx=10, sticky="w")
 
         #! -------------------- BOTÕES PRINCIPAIS -------------------- #
 
-        self.btn_importar = tk.Button(root, text="Importar", command=self.mostrar_selecao_conta, font=("Roboto", 10), bg="#4CAF50", fg="white", relief="groove", padx=5, pady=3)
+        self.btn_importar = ttk.Button(root, text="Importar", command=self.mostrar_selecao_conta, width=7)
         self.btn_importar.grid(row=4, column=0, padx=10, sticky="w")
 
-        self.btn_limpar = tk.Button(root, text="Limpar Tudo", command=self.confirmar_limpar_dados, font=("Roboto", 10), bg="#FF5733", fg="white", relief="groove", padx=5, pady=3)
-        self.btn_limpar.grid(row=4, column=0, padx=80, sticky="w")
+        self.btn_limpar = ttk.Button(root, text="Limpar Tudo", command=self.confirmar_limpar_dados, width=10)
+        self.btn_limpar.grid(row=4, column=0, padx=87, sticky="w")
 
-        self.btn_classificar1p = tk.Button(root, text="Classificar 1P", command=self.classificar_dados, font=("Roboto", 10), bg="#4CAF50", fg="white", relief="groove", padx=5, pady=3)
-        self.btn_classificar1p.grid(row=2, column=3, padx=90, sticky="e")
+        self.btn_classificar1p = ttk.Button(root, text="Classificar 1P", command=self.classificar_dados, width=12)
+        self.btn_classificar1p.grid(row=2, column=3, padx=91, sticky="e")
 
-        self.btn_limpar1p = tk.Button(root, text="Limpar 1P", command=self.limpar_1p, font=("Roboto", 10), bg="#4CAF50", fg="white", relief="groove", padx=5, pady=3)
-        self.btn_limpar1p.grid(row=2, column=3, padx=5, sticky="e")
+        self.btn_limpar1p = ttk.Button(root, text="Limpar 1P", command=self.limpar_1p, width=9)
+        self.btn_limpar1p.grid(row=2, column=3, padx=2, sticky="e")
 
-        self.btn_exportar = tk.Button(root, text="Exportar", command=self.exportar_dados, font=("Roboto", 10), bg="#4CAF50", fg="white", relief="groove", padx=5, pady=3)
+        self.btn_exportar = ttk.Button(root, text="Exportar", command=self.exportar_dados, width=7)
         self.btn_exportar.grid(row=2, column=4, sticky="w")
 
         #! -------------------- CAMPOS DE SALDO -------------------- #
         #* -------------- LANÇAMENTO EXTRATO BANCÁRIO -------------- #
 
-        self.saldo_inicial_label = tk.Label(root, text="Saldo Inicial Importado>", font=("Roboto", 11), bg='#D9D9D9', anchor='e')
+        self.saldo_inicial_label = tk.Label(root, text="Saldo Inicial Importado", font=("Roboto", 11), bg='#313131', fg="white", anchor='e')
         self.saldo_inicial_label.grid(row=2, column=1, padx=1, sticky="w")
-        self.saldo_inicial_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
-        self.saldo_inicial_entry.grid(row=2, column=1, columnspan=2, padx=160, sticky="w")
+        self.saldo_inicial_entry = ttk.Entry(root, width=17)
+        self.saldo_inicial_entry.grid(row=2, column=1, columnspan=2, padx=163, sticky="w")
 
-        self.saldo_final_label = tk.Label(root, text="Saldo Final Importado>", font=("Roboto", 11), bg='#D9D9D9', anchor='e')
-        self.saldo_final_label.grid(row=3, column=1, padx=3, sticky="w")
-        self.saldo_final_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
-        self.saldo_final_entry.grid(row=3, column=1, columnspan=2, padx=160, sticky="w")
+        self.saldo_final_label = tk.Label(root, text="Saldo Final Importado", font=("Roboto", 11), bg='#313131', fg="white", anchor='e')
+        self.saldo_final_label.grid(row=3, column=1, padx=8, sticky="w")
+        self.saldo_final_entry = ttk.Entry(root, width=17)
+        self.saldo_final_entry.grid(row=3, column=1, columnspan=2, padx=163, sticky="w")
 
-        self.saldo_final_calculado_label = tk.Label(root, text="Saldo Final Calculado>", font=("Roboto", 11), bg='#D9D9D9', anchor='e')
-        self.saldo_final_calculado_label.grid(row=4, column=1, padx=3, sticky="w")
-        self.saldo_final_calculado_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
-        self.saldo_final_calculado_entry.grid(row=4, column=1, columnspan=2, padx=160, sticky="w")
+        self.saldo_final_calculado_label = tk.Label(root, text="Saldo Final Calculado", font=("Roboto", 11), bg='#313131', fg="white", anchor='e')
+        self.saldo_final_calculado_label.grid(row=4, column=1, padx=10, sticky="w")
+        self.saldo_final_calculado_entry = ttk.Entry(root, width=17)
+        self.saldo_final_calculado_entry.grid(row=4, column=1, columnspan=2, padx=163, sticky="w")
 
-        self.diferenca_label = tk.Label(root, text="Diferença>", font=("Roboto", 11), bg='#D9D9D9', anchor='e')
-        self.diferenca_label.grid(row=5, column=1, padx=82, sticky="w")
-        self.diferenca_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
-        self.diferenca_entry.grid(row=5, column=1, columnspan=2, padx=160, sticky="w")
+        self.diferenca_label = tk.Label(root, text="Diferença", font=("Roboto", 11), bg='#313131', fg="white", anchor='e')
+        self.diferenca_label.grid(row=5, column=1, padx=89, sticky="w")
+        self.diferenca_entry = ttk.Entry(root, width=17)
+        self.diferenca_entry.grid(row=5, column=1, columnspan=2, padx=163, sticky="w")
 
-        self.empresa_label = tk.Label(root, text="Empresa>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
-        self.empresa_label.grid(row=3, column=2, padx=51, sticky="w")
-        self.empresa_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=10)
+        self.empresa_label = tk.Label(root, text="Empresa", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
+        self.empresa_label.grid(row=3, column=2, padx=59, sticky="w")
+        self.empresa_entry = ttk.Entry(root, width=10)
         self.empresa_entry.grid(row=3, column=2, padx=125, sticky="w")
 
-        self.conta_label = tk.Label(root, text="Conta>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
-        self.conta_label.grid(row=4, column=2, padx=72, sticky="w")
-        self.conta_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=10)
+        self.conta_label = tk.Label(root, text="Conta", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
+        self.conta_label.grid(row=4, column=2, padx=76, sticky="w")
+        self.conta_entry = ttk.Entry(root, width=10)
         self.conta_entry.grid(row=4, column=2, padx=125, sticky="w")
 
-        self.centro_custo_label = tk.Label(root, text="C/Custo>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
-        self.centro_custo_label.grid(row=5, column=2, padx=54, sticky="w")
-        self.centro_custo_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=10)
+        self.centro_custo_label = tk.Label(root, text="C/Custo", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
+        self.centro_custo_label.grid(row=5, column=2, padx=61, sticky="w")
+        self.centro_custo_entry = ttk.Entry(root, width=10)
         self.centro_custo_entry.grid(row=5, column=2, padx=125, sticky="w")
 
-        self.banco_label = tk.Label(root, text="Banco>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
+        self.banco_label = tk.Label(root, text="Banco", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
         self.banco_label.grid(row=4, column=2, padx=1, sticky="e")
-        self.banco_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=20)
+        self.banco_entry = ttk.Entry(root, width=20)
         self.banco_entry.grid(row=4, column=3, padx=1, sticky="w")
         
-        self.agencia_conta_label = tk.Label(root, text="Agência/Conta>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
+        self.agencia_conta_label = tk.Label(root, text="Agência/Conta", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
         self.agencia_conta_label.grid(row=5, column=2, padx=1, sticky="e")
-        self.agencia_conta_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=20)
+        self.agencia_conta_entry = ttk.Entry(root, width=20)
         self.agencia_conta_entry.grid(row=5, column=3, padx=1, sticky="w")
 
-        self.saldo_final_contabil_label = tk.Label(root, text="Saldo Final Contábil>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
-        self.saldo_final_contabil_label.grid(row=4, column=3, columnspan=4, padx=95, sticky="e")
-        self.saldo_final_contabil_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=10)
+        self.saldo_final_contabil_label = tk.Label(root, text="Saldo Final Contábil", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
+        self.saldo_final_contabil_label.grid(row=4, column=3, columnspan=4, padx=98, sticky="e")
+        self.saldo_final_contabil_entry = ttk.Entry(root, width=10)
         self.saldo_final_contabil_entry.grid(row=4, column=3, columnspan=4, padx=10, sticky="e")
 
-        self.diferenca_extrato_bancario_label = tk.Label(root, text="Diferença c/Extrato Bancário>", font=("Roboto", 11), bg='#D9D9D9', anchor='w')
-        self.diferenca_extrato_bancario_label.grid(row=5, column=3, columnspan=4, padx=95, sticky="e")
-        self.diferenca_extrato_bancario_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=10)
+        self.diferenca_extrato_bancario_label = tk.Label(root, text="Diferença c/Extrato Bancário", font=("Roboto", 11), bg='#313131', fg="white", anchor='w')
+        self.diferenca_extrato_bancario_label.grid(row=5, column=3, columnspan=4, padx=98, sticky="e")
+        self.diferenca_extrato_bancario_entry = ttk.Entry(root, width=10)
         self.diferenca_extrato_bancario_entry.grid(row=5, column=3, columnspan=4, padx=10, sticky="e")
 
-        self.total_linhas_label = tk.Label(root, text="Linhas importadas: 0", font=("Roboto, 11"), bg='#D9D9D9')
-        self.total_linhas_label.grid(row=3, column=3, padx=1, sticky="w")
-
-        self.linhadeajuda_label = tk.Label(root, text="Coluna 0", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
+        self.linhadeajuda_label = tk.Label(root, text="Coluna 0", fg='#313131', font=("Roboto", 10), bg='#313131')
         self.linhadeajuda_label.grid(row=1, column=0)
-        self.linhadeajuda_label = tk.Label(root, text="Coluna 1", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
+        self.linhadeajuda_label = tk.Label(root, text="Coluna 1", fg='#313131', font=("Roboto", 10), bg='#313131')
         self.linhadeajuda_label.grid(row=1, column=1)
-        self.linhadeajuda_label = tk.Label(root, text="Coluna 2", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
+        self.linhadeajuda_label = tk.Label(root, text="Coluna 2", fg='#313131', font=("Roboto", 10), bg='#313131')
         self.linhadeajuda_label.grid(row=1, column=2)
-        self.linhadeajuda_label = tk.Label(root, text="Coluna 3", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
+        self.linhadeajuda_label = tk.Label(root, text="Coluna 3", fg='#313131', font=("Roboto", 10), bg='#313131')
         self.linhadeajuda_label.grid(row=1, column=3)
-        self.linhadeajuda_label = tk.Label(root, text="Coluna 4", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
+        self.linhadeajuda_label = tk.Label(root, text="Coluna 4", fg='#313131', font=("Roboto", 10), bg='#313131')
         self.linhadeajuda_label.grid(row=1, column=4)
-        self.linhadeajuda_label = tk.Label(root, text="Coluna 5", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
+        self.linhadeajuda_label = tk.Label(root, text="Coluna 5", fg='#313131', font=("Roboto", 10), bg='#313131')
         self.linhadeajuda_label.grid(row=1, column=5)
 
-        self.busca_btn = tk.Button(root, text="Buscar", command=self.buscar_termo_treeview, font=("Roboto", 9), bg='#2196F3', fg="white", relief="groove")
-        self.busca_btn.grid(row=2, column=2, padx=70, sticky="w")
-        self.busca_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=13)
+        self.busca_btn = ttk.Button(root, text="Buscar", command=self.buscar_termo_treeview, width=6)
+        self.busca_btn.grid(row=2, column=2, padx=55, sticky="w")
+        self.busca_entry = ttk.Entry(root, font=("Roboto", 10), width=10)
         self.busca_entry.grid(row=2, column=2, padx=125, sticky="w")
 
         #* -------------------- TREEVIEW PARA EXIBIR OS DADOS IMPORTADOS -------------------- #
@@ -159,8 +160,8 @@ class ImportadorExtratos:
         
         self.tree.tag_configure('negativo', foreground='red') #? torna os valores negativos em vermelho
 
-        self.tree.tag_configure('linha_par', background='#F0F0F0') #? cinza
-        self.tree.tag_configure('linha_impar', background='#ffffff') #? branco
+        self.tree.tag_configure('linha_par', background='#313131') #? cinza
+        self.tree.tag_configure('linha_impar', background='#272727') #? branco
 
         self.tree.tag_configure('destaque', background='#ffff99') #? amarelo claro
 
@@ -204,6 +205,9 @@ class ImportadorExtratos:
         root.grid_columnconfigure(3, weight=1)
         root.grid_columnconfigure(4, weight=1)
         root.grid_columnconfigure(5, weight=1)
+
+        self.total_linhas_label = tk.Label(root, text="Linhas Importadas: 0", font=("Roboto", 11), bg='#313131')
+        self.total_linhas_label.grid(row=5, column=0, padx=10, sticky="w")
 
     def buscar_termo_treeview(self):
         termo = self.busca_entry.get().strip().lower()
@@ -2425,9 +2429,9 @@ class ImportadorExtratos:
         total = len(self.tree.get_children())
         self.total_linhas_label.config(text=f"Linhas importadas: {total}")
 
-        self.total_linhas_label.config(bg="#FFF176")
+        self.total_linhas_label.config(bg="#313131")
 
-        self.root.after(300, lambda: self.total_linhas_label.config(bg="#D9D9D9"))
+        self.root.after(300, lambda: self.total_linhas_label.config(bg="#313131"))
 
     def exportar_dados(self):
         wb = Workbook()
@@ -2492,44 +2496,44 @@ class TelaSelecaoConta:
         self.callback = callback
         self.root.title("Importador")
         self.root.geometry("480x210")
-        self.root.config(bg='#f4f4f4')
+        self.root.config(bg='#313131')
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
-        self.title_label = tk.Label(root, text="Qual conta bancária irá importar?", font=("Roboto", 17, "bold"), bg='#f4f4f4') 
+        self.title_label = tk.Label(root, text="Qual conta bancária irá importar?", font=("Roboto", 17, "bold"), bg='#313131') 
         self.title_label.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="w")
 
         #* -------------------- CAMPOS DE INFORMAÇÕES -------------------- #
-        self.label_empresa = tk.Label(root, text="Empresa:", font=("Roboto", 10), bg='#f4f4f4') 
+        self.label_empresa = tk.Label(root, text="Empresa:", font=("Roboto", 10), bg='#313131') 
         self.label_empresa.grid(row=2, column=0, pady=1, padx=10, sticky="w")
 
         self.empresas = self.carregar_empresas()
-        self.combobox_empresa = ttk.Combobox(root, values=self.empresas, font=("Roboto", 10), width=63)
+        self.combobox_empresa = ttk.Combobox(root, values=self.empresas, font=("Roboto", 10), width=61)
         self.combobox_empresa.grid(row=3, column=0, pady=1, padx=10, sticky="w")
         self.combobox_empresa.bind("<<ComboboxSelected>>", self.atualizar_contas_contabeis)
         self.combobox_empresa.bind("<KeyRelease>", self.atualizar_contas_contabeis)
 
-        self.label_conta_contabil = tk.Label(root, text="Conta Contábil:", font=("Roboto", 10), bg='#f4f4f4')
+        self.label_conta_contabil = tk.Label(root, text="Conta Contábil:", font=("Roboto", 10), bg='#313131')
         self.label_conta_contabil.grid(row=4, column=0, pady=1, padx=10, sticky="w")
 
-        self.combobox_conta_contabil = ttk.Combobox(root, font=("Roboto", 10), width=63)
+        self.combobox_conta_contabil = ttk.Combobox(root, font=("Roboto", 10), width=61)
         self.combobox_conta_contabil.grid(row=5, column=0, pady=1, padx=10, sticky="w")
 
         #* -------------------- BOTÕES PRINCIPAIS -------------------- #
-        self.btn_nova_empresa = tk.Button(root, text="Nova Empresa", command=self.abrir_tela_nova_empresa, font=("Roboto", 10), bg="#4CAF50", fg="white")
-        self.btn_nova_empresa.grid(row=7, column=0, pady=15, padx=10, sticky="w")
+        self.btn_nova_empresa = ttk.Button(root, text="Nova Emp", command=self.abrir_tela_nova_empresa, width=9)
+        self.btn_nova_empresa.grid(row=6, column=0, pady=5, padx=10, sticky="w")
 
-        self.btn_nova_conta = tk.Button(root, text="Nova Conta", command=self.abrir_tela_nova_conta, font=("Roboto", 10), bg="#4CAF50", fg="white")
-        self.btn_nova_conta.grid(row=7, column=0, pady=15, padx=109, sticky="w")
+        self.btn_nova_conta = ttk.Button(root, text="Nova Conta", command=self.abrir_tela_nova_conta, width=10)
+        self.btn_nova_conta.grid(row=6, column=0, pady=5, padx=100, sticky="w")
 
-        self.btn_alterar_conta = tk.Button(root, text="Alterar Conta", command=self.alterar_conta, font=("Roboto", 10), bg="#FFC107", fg="black")
-        self.btn_alterar_conta.grid(row=7, column=0, pady=15, padx=190, sticky="w")
+        self.btn_alterar_conta = ttk.Button(root, text="Alterar Conta", command=self.alterar_conta, width=11)
+        self.btn_alterar_conta.grid(row=6, column=0, pady=5, padx=197, sticky="w")
 
-        self.btn_ok = tk.Button(root, text="OK", command=self.confirmar, font=("Roboto", 10), bg="#4CAF50", fg="white")
-        self.btn_ok.grid(row=7, column=0, columnspan=2, pady=15, padx=83, sticky="e")
+        self.btn_ok = ttk.Button(root, text="OK", command=self.confirmar, width=3)
+        self.btn_ok.grid(row=6, column=0, pady=5, padx=105, sticky="e")
 
-        self.btn_cancelar = tk.Button(root, text="Cancelar", command=self.cancelar, font=("Roboto", 10), bg="#FF5733", fg="white")
-        self.btn_cancelar.grid(row=7, column=0, columnspan=2, pady=15, padx=15, sticky="e")
+        self.btn_cancelar = ttk.Button(root, text="Cancelar", command=self.cancelar, width=8)
+        self.btn_cancelar.grid(row=6, column=0, pady=5, padx=22, sticky="e")
 
     def atualizar_contas_contabeis(self, event=None):
         empresa = self.combobox_empresa.get()
@@ -2673,64 +2677,56 @@ class TelaNovaConta:
         self.root = root
         self.callback = callback
         self.root.title("Nova Conta")
-        self.root.geometry("480x240")
-        self.root.config(bg='#f4f4f4')
+        self.root.geometry("460x215")
+        self.root.config(bg='#313131')
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
-        self.title_label = tk.Label(root, text="Informações da conta bancária", font=("Roboto", 17, "bold"), bg='#f4f4f4') 
+        self.title_label = tk.Label(root, text="Informações da conta bancária", font=("Roboto", 17, "bold"), bg='#313131') 
         self.title_label.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="w")
 
         #* -------------------- CAMPOS DE INFORMAÇÕES -------------------- #
-        self.label_codigo_empresa = tk.Label(root, text="Código da Empresa:", font=("Roboto", 10), bg='#f4f4f4') 
+        self.label_codigo_empresa = tk.Label(root, text="Código da Empresa:", font=("Roboto", 10), bg='#313131') 
         self.label_codigo_empresa.grid(row=2, column=0, pady=1, padx=10, sticky="w")
-        self.entry_codigo_empresa = tk.Entry(root, font=("Roboto", 10), width=50)
+        self.entry_codigo_empresa = ttk.Entry(root, font=("Roboto", 10), width=15)
         self.entry_codigo_empresa.grid(row=3, column=0, pady=1, padx=10, sticky="w")
 
-        self.label_bancos = tk.Label(root, text="Banco:", font=("Roboto", 10), bg='#f4f4f4')
-        self.label_bancos.grid(row=4, column=0, pady=1, padx=10, sticky="w")
-        self.bancos = ["001 - Banco do Brasil", "033 - Banco Santander", "041 - Banco Banrisul", 
-                       "077 - Banco Inter", "102 - Banco Xp Investimentos", "104 - Banco Caixa Eletrônica", 
-                       "106 - Banco Itabanco", "197 - Banco Stone Pagamentos", "208 - Banco BTG Pactual", 
-                       "212 - Banco Original", "218 - Banco Bs2", "237 - Banco Bradesco", 
-                       "247 - Banco Bancoob", "260 - Banco Nu Pagamentos", "274 - Banco Grafeno", 
-                       "290 - Banco Pagseguro", "308 - Banco Comercial Bancesa", "323 - Banco Mercado Pago", 
-                       "336 - Banco C6 Bank", "341 - Banco Itau", "348 - Banco Xp", 
-                       "351 - Banco Santander Brasil", "353 - Banco Santander", "371 - Banco Warren Corretora", 
-                       "399 - Banco HSBC", "403 - Cora Sociedade De Crédito Direto", "422 - Banco Safra", 
-                       "450 - Banco FitBank", "461 - Banco Asaas", "505 - Credit Suisse", 
-                       "637 - Banco Sofisa", "643 - Banco Pine", "707 - Banco Daycoval", 
-                       "745 - Banco Citibank", "748 - Banco Sicredi", "752 - Banco Bnp Paribas Brasil", 
-                       "756 - Banco Sicoob", "094 - Banco Finaxis", "128 - Banco Ms Bank"]
-        self.combobox_banco = ttk.Combobox(root, values=self.bancos, font=("Roboto", 10), width=62)
-        self.combobox_banco.grid(row=5, column=0, pady=1, padx=10, sticky="w")
+        self.label_bancos = tk.Label(root, text="Banco:", font=("Roboto", 10), bg='#313131')
+        self.label_bancos.grid(row=2, column=0, pady=1, padx=134, sticky="w")
+        self.bancos = ["001 - Banco do Brasil", "077 - Banco Inter", "104 - Banco Caixa Eletrônica", 
+                       "237 - Banco Bradesco", "274 - Banco Grafeno", "290 - Banco Pagseguro", 
+                       "336 - Banco C6 Bank", "341 - Banco Itau", "353 - Banco Santander", 
+                       "399 - Banco HSBC", "422 - Banco Safra", "505 - Credit Suisse", 
+                       "707 - Banco Daycoval", "748 - Banco Sicredi"]
+        self.combobox_banco = ttk.Combobox(root, values=self.bancos, font=("Roboto", 10), width=40)
+        self.combobox_banco.grid(row=3, column=0, pady=1, padx=135, sticky="w")
 
-        self.label_agencia = tk.Label(root, text="Agência:", font=("Roboto", 10), bg='#f4f4f4')
+        self.label_agencia = tk.Label(root, text="Agência:", font=("Roboto", 10), bg='#313131')
         self.label_agencia.grid(row=6, column=0, pady=1, padx=10, sticky="w")
-        self.entry_agencia = tk.Entry(root, font=("Roboto", 10), width=13)
+        self.entry_agencia = ttk.Entry(root, font=("Roboto", 10), width=10)
         self.entry_agencia.grid(row=7, column=0, pady=1, padx=10, sticky="w")
 
-        self.label_conta_bancaria = tk.Label(root, text="Conta Bancária:", font=("Roboto", 10), bg='#f4f4f4')
-        self.label_conta_bancaria.grid(row=6, column=0, pady=1, padx=116, sticky="w")
-        self.entry_conta_bancaria = tk.Entry(root, font=("Roboto", 10), width=15)
-        self.entry_conta_bancaria.grid(row=7, column=0, pady=1, padx=116, sticky="w")
+        self.label_conta_bancaria = tk.Label(root, text="Conta Bancária:", font=("Roboto", 10), bg='#313131')
+        self.label_conta_bancaria.grid(row=6, column=0, pady=1, padx=100, sticky="w")
+        self.entry_conta_bancaria = ttk.Entry(root, font=("Roboto", 10), width=15)
+        self.entry_conta_bancaria.grid(row=7, column=0, pady=1, padx=100, sticky="w")
 
-        self.label_conta_ativo = tk.Label(root, text="N° Conta Ativo:", font=("Roboto", 10), bg='#f4f4f4')
-        self.label_conta_ativo.grid(row=6, column=0, pady=1, padx=240, sticky="w")
-        self.entry_conta_ativo = tk.Entry(root, font=("Roboto", 10), width=15)
-        self.entry_conta_ativo.grid(row=7, column=0, pady=1, padx=240, sticky="w")
+        self.label_conta_ativo = tk.Label(root, text="N° Conta Ativo:", font=("Roboto", 10), bg='#313131')
+        self.label_conta_ativo.grid(row=6, column=0, pady=1, padx=225, sticky="w")
+        self.entry_conta_ativo = ttk.Entry(root, font=("Roboto", 10), width=13)
+        self.entry_conta_ativo.grid(row=7, column=0, pady=1, padx=225, sticky="w")
 
-        self.label_conta_passivo = tk.Label(root, text="N° Conta Passivo:", font=("Roboto", 10), bg='#f4f4f4')
-        self.label_conta_passivo.grid(row=6, column=0, pady=1, padx=120, sticky="e")
-        self.entry_conta_passivo = tk.Entry(root, font=("Roboto", 10), width=15)
-        self.entry_conta_passivo.grid(row=7, column=0, pady=1, padx=120, sticky="e")
+        self.label_conta_passivo = tk.Label(root, text="N° Conta Passivo:", font=("Roboto", 10), bg='#313131')
+        self.label_conta_passivo.grid(row=6, column=0, pady=1, padx=145, sticky="e")
+        self.entry_conta_passivo = ttk.Entry(root, font=("Roboto", 10), width=14)
+        self.entry_conta_passivo.grid(row=7, column=0, pady=1, padx=135, sticky="e")
 
         #* -------------------- BOTÕES PRINCIPAIS -------------------- #
-        self.btn_salvar = tk.Button(root, text="Salvar", command=self.salvar, font=("Roboto", 10), bg="#4CAF50", fg="white")
-        self.btn_salvar.grid(row=8, column=0, sticky="e", padx=192, pady=8)
+        self.btn_salvar = ttk.Button(root, text="Salvar", command=self.salvar, width=8)
+        self.btn_salvar.grid(row=8, column=0, sticky="e", padx=220, pady=8)
 
-        self.btn_cancelar = tk.Button(root, text="Cancelar", command=self.cancelar, font=("Roboto", 10), bg="#FF5733", fg="white")
-        self.btn_cancelar.grid(row=8, column=0, sticky="e", padx=122, pady=8)
+        self.btn_cancelar = ttk.Button(root, text="Cancelar", command=self.cancelar, width=8)
+        self.btn_cancelar.grid(row=8, column=0, sticky="e", padx=135, pady=8)
 
     def salvar(self):
         codigo_empresa = self.entry_codigo_empresa.get()
@@ -2753,31 +2749,31 @@ class TelaNovaEmpresa:
         self.root = root
         self.callback = callback
         self.root.title("Nova Empresa")
-        self.root.geometry("480x210")
-        self.root.config(bg='#f4f4f4')
+        self.root.geometry("480x167")
+        self.root.config(bg='#313131')
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
 
         #* -------------------- TÍTULO PRINCIPAL -------------------- #
-        self.title_label = tk.Label(root, text="Informe os dados da empresa", font=("Roboto", 17, "bold"), bg='#f4f4f4') 
+        self.title_label = tk.Label(root, text="Informe os dados da empresa", font=("Roboto", 17, "bold"), bg='#313131') 
         self.title_label.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="w")
 
         #* -------------------- CAMPOS DE INFORMAÇÕES -------------------- #
-        self.label_codigo = tk.Label(root, text="Código:", font=("Roboto", 10), bg='#f4f4f4') 
+        self.label_codigo = tk.Label(root, text="Código:", font=("Roboto", 10), bg='#313131') 
         self.label_codigo.grid(row=2, column=0, pady=1, padx=10, sticky="w")
-        self.entry_codigo = tk.Entry(root, font=("Roboto", 10), width=65) 
+        self.entry_codigo = ttk.Entry(root, font=("Roboto", 10), width=6) 
         self.entry_codigo.grid(row=3, column=0, pady=1, padx=10, sticky="w")
 
-        self.label_razao_social = tk.Label(root, text="Razão Social:", font=("Roboto", 10), bg='#f4f4f4') 
-        self.label_razao_social.grid(row=4, column=0, pady=1, padx=10, sticky="w")
-        self.entry_razao_social = tk.Entry(root, font=("Roboto", 10), width=65) 
-        self.entry_razao_social.grid(row=5, column=0, pady=1, padx=10, sticky="w")
+        self.label_razao_social = tk.Label(root, text="Razão Social:", font=("Roboto", 10), bg='#313131') 
+        self.label_razao_social.grid(row=2, column=0, pady=1, padx=80, sticky="w")
+        self.entry_razao_social = ttk.Entry(root, font=("Roboto", 10), width=53) 
+        self.entry_razao_social.grid(row=3, column=0, pady=1, padx=80, sticky="w")
 
         #* -------------------- BOTÕES PRINCIPAIS -------------------- #
-        self.btn_salvar = tk.Button(root, text="Salvar", command=self.salvar, font=("Roboto", 10), bg="#4CAF50", fg="white")
-        self.btn_salvar.grid(row=7, column=0, columnspan=2, pady=15, padx=77, sticky="e")
+        self.btn_salvar = ttk.Button(root, text="Salvar", command=self.salvar, width=8)
+        self.btn_salvar.grid(row=7, column=0, columnspan=2, pady=10, padx=164, sticky="e")
 
-        self.btn_cancelar = tk.Button(root, text="Cancelar", command=self.cancelar, font=("Roboto", 10), bg="#FF5733", fg="white")
-        self.btn_cancelar.grid(row=7, column=0, columnspan=2, pady=15, padx=10, sticky="e")
+        self.btn_cancelar = ttk.Button(root, text="Cancelar", command=self.cancelar, width=8)
+        self.btn_cancelar.grid(row=7, column=0, columnspan=2, pady=10, padx=80, sticky="e")
 
     def salvar(self):
         codigo = self.entry_codigo.get()
