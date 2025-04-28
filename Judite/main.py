@@ -119,6 +119,9 @@ class ImportadorExtratos:
         self.diferenca_extrato_bancario_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=10)
         self.diferenca_extrato_bancario_entry.grid(row=5, column=3, columnspan=4, padx=10, sticky="e")
 
+        self.total_linhas_label = tk.Label(root, text="Linhas importadas: 0", font=("Roboto, 11"), bg='#D9D9D9')
+        self.total_linhas_label.grid(row=3, column=3, padx=1, sticky="w")
+
         self.linhadeajuda_label = tk.Label(root, text="Coluna 0", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
         self.linhadeajuda_label.grid(row=1, column=0)
         self.linhadeajuda_label = tk.Label(root, text="Coluna 1", fg='#D9D9D9', font=("Roboto", 10), bg='#D9D9D9')
@@ -134,7 +137,7 @@ class ImportadorExtratos:
 
         self.busca_btn = tk.Button(root, text="Buscar", command=self.buscar_termo_treeview, font=("Roboto", 9), bg='#2196F3', fg="white", relief="groove")
         self.busca_btn.grid(row=2, column=2, padx=70, sticky="w")
-        self.busca_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=17)
+        self.busca_entry = tk.Entry(root, font=("Roboto", 10), bd=1, relief="solid", width=13)
         self.busca_entry.grid(row=2, column=2, padx=125, sticky="w")
 
         #* -------------------- TREEVIEW PARA EXIBIR OS DADOS IMPORTADOS -------------------- #
@@ -638,6 +641,8 @@ class ImportadorExtratos:
                 for i, dados in enumerate(dados_importados):
                     tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                     self.tree.insert("", "end", values=dados, tags=(tag,))
+
+                self.atualizar_total_linhas_importadas()
                     
                 print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                 print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -982,6 +987,8 @@ class ImportadorExtratos:
                             for i, dados in enumerate(dados_importados):
                                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                                 self.tree.insert("", "end", values=dados, tags=(tag,))
+
+                            self.atualizar_total_linhas_importadas()
                     
                             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -1308,6 +1315,8 @@ class ImportadorExtratos:
                                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
+                            self.atualizar_total_linhas_importadas()
+
                             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
                             print(f"Total de linhas processadas: {len(dados_importados)}")
 
@@ -1573,6 +1582,8 @@ class ImportadorExtratos:
             for i, dados in enumerate(dados_importados):
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                 self.tree.insert("", "end", values=dados, tags=(tag,))
+
+            self.atualizar_total_linhas_importadas()
                     
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -1896,6 +1907,8 @@ class ImportadorExtratos:
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
+            self.atualizar_total_linhas_importadas()
+
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
 
@@ -2137,6 +2150,8 @@ class ImportadorExtratos:
             for i, dados in enumerate(dados_importados):
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                 self.tree.insert("", "end", values=dados, tags=(tag,))
+
+            self.atualizar_total_linhas_importadas()
                     
             print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
             print(f"Total de linhas processadas: {len(dados_importados)}")
@@ -2370,6 +2385,8 @@ class ImportadorExtratos:
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
+            self.atualizar_total_linhas_importadas()
+
         except Exception as e:
             print("\n=== ERRO FATAL ===")
             print(f"Erro: {str(e)}")
@@ -2399,8 +2416,18 @@ class ImportadorExtratos:
         self.agencia_conta_entry.delete(0, tk.END)
         self.saldo_final_contabil_entry.delete(0, tk.END)
         self.diferenca_extrato_bancario_entry.delete(0, tk.END)
+        self.busca_entry.delete(0, tk.END)
         for i in self.tree.get_children():
             self.tree.delete(i)
+        self.atualizar_total_linhas_importadas()
+
+    def atualizar_total_linhas_importadas(self):
+        total = len(self.tree.get_children())
+        self.total_linhas_label.config(text=f"Linhas importadas: {total}")
+
+        self.total_linhas_label.config(bg="#FFF176")
+
+        self.root.after(300, lambda: self.total_linhas_label.config(bg="#D9D9D9"))
 
     def exportar_dados(self):
         wb = Workbook()
