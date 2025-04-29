@@ -433,6 +433,11 @@ class ImportadorExtratos:
     def acao_bradesco(self, arquivo):
             print("\n=== INÍCIO DO PROCESSAMENTO: BANCO BRADESCO ===")
             print(f"Arquivo recebido: {arquivo}")
+            def formatar_valor_brasileiro(valor):
+                try:
+                    return locale.format_string("%.2f", float(valor), grouping=True)
+                except:
+                    return valor
             try:
                 extensao = arquivo.lower().split('.')[-1]
                 print(f"Extensão detectada: {extensao}")
@@ -646,6 +651,9 @@ class ImportadorExtratos:
 
                 for i, dados in enumerate(dados_importados):
                     tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                    dados[3] = formatar_valor_brasileiro(dados[3])
+
                     self.tree.insert("", "end", values=dados, tags=(tag,))
 
                 self.atualizar_total_linhas_importadas()
@@ -1319,6 +1327,9 @@ class ImportadorExtratos:
 
                             for i, dados in enumerate(dados_importados):
                                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                                dados[3] = formatar_valor_brasileiro(dados[3])
+
                                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
                             self.atualizar_total_linhas_importadas()
@@ -1587,6 +1598,9 @@ class ImportadorExtratos:
 
             for i, dados in enumerate(dados_importados):
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                dados[3] = formatar_valor_brasileiro(dados[3])
+
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
             self.atualizar_total_linhas_importadas()
@@ -1911,6 +1925,9 @@ class ImportadorExtratos:
 
             for i, dados in enumerate(dados_importados):
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                dados[3] = formatar_valor_brasileiro(dados[3])
+
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
             self.atualizar_total_linhas_importadas()
@@ -2155,6 +2172,9 @@ class ImportadorExtratos:
 
             for i, dados in enumerate(dados_importados):
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                dados[3] = formatar_valor_brasileiro(dados[3])
+
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
             self.atualizar_total_linhas_importadas()
@@ -2389,6 +2409,9 @@ class ImportadorExtratos:
 
             for i, dados in enumerate(dados_importados):
                 tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                dados[3] = formatar_valor_brasileiro(dados[3])
+
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
             self.atualizar_total_linhas_importadas()
