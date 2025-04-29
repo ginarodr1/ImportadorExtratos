@@ -296,28 +296,26 @@ class ImportadorExtratos:
             self.tree.set(item, coluna_destino, valor_origem)
 
         #* -------------------- ETAPA DA CLISSIFICAÇÃO -------------------- #
-    def corrigir_valor(self, valor_raw):
-        valor_raw = str(valor_raw).strip()
-        valor_filtrado = re.sub(r"[^\d,.-]", "", valor_raw)
-
-        partes = valor_filtrado.split(".")
-        if len(partes) > 2:
-            valor_filtrado = "".join(partes[:-1]) + "." + partes[-1]
-
-        valor_str = valor_filtrado.replace(",", ".")
-
+    def corrigir_valor(self, valor):
         try:
+            valor_str = str(valor).strip()
+
+            valor_str = valor_str.replace("R$", "").replace(" ", "")
+
+            if "," in valor_str:
+                valor_str = valor_str.replace('.', '').replace(',', '.')
+
             return float(valor_str)
-        except ValueError:
-            print(f"❌ Valor inválido mesmo após correção: '{valor_raw}' → '{valor_str}'")
+        except Exception as e:
+            print(f"Valor inválido mesmo após correção: '{valor}' → '{valor_str}'")
             return 0.0
 
     def classificar_dados(self):
         print("\n=== PROCESSO DE CLASSIFICAÇÃO ===")
         conta_bancaria = self.conta_entry.get()
         incluir_banco = messagebox.askyesno("Classificar Dados", "Deseja incluir a identificação do banco no histórico contábil?")
-        
-        conta_ativo = None #? carregar contas.csv para obter a conta ativo
+    
+        conta_ativo = None
         try:
             if os.path.exists('contas.csv'):
                 df_contas = pd.read_csv('contas.csv')
@@ -328,44 +326,53 @@ class ImportadorExtratos:
                     print(f"Conta ativo encontrada: {conta_ativo}")
         except Exception as e:
             print(f"Erro ao carregar contas.csv: {e}")
-        
-        for item in self.tree.get_children(): #? processar cada item na treeview
+
+        desc_idx = self.tree["columns"].index("DescricaoLEB")
+        hist_idx = self.tree["columns"].index("HistoricoLC")
+
+        if incluir_banco:
+            banco_nome = self.banco_entry.get().strip()
+            agencia_conta = self.agencia_conta_entry.get().strip()
+            if '/' in agencia_conta:
+                agencia_nome, conta_nome = agencia_conta.split('/', 1)
+            else:
+                agencia_nome = agencia_conta
+                conta_nome = self.conta_entry.get().strip()
+
+        for item in self.tree.get_children():
             values = list(self.tree.item(item, 'values'))
-            descricao = values[self.tree["columns"].index("DescricaoLEB")] #? copiar e simplificar descrições
-            
-            lancamento_simplificado = descricao #? procurar por padrões conhecidos
-            
-            lancamento_idx = self.tree["columns"].index("LancamentoLC") #? atualizar o lançamento
-            values[lancamento_idx] = lancamento_simplificado
-            
-            if incluir_banco: #? adicionar identificação do banco se solicitado
-                banco_nome = self.banco_entry.get()
-                agencia_conta = self.agencia_conta_entry.get()
-                agencia_nome = agencia_conta.split('/')[0]
-                conta_nome = agencia_conta.split('/')[1]
-                
-                if values[lancamento_idx]:  #? verifica se o lançamento não está vazio
-                    values[lancamento_idx] = f"{values[lancamento_idx]} - Bco.{banco_nome} Ag.{agencia_nome} CC.{conta_nome}"
-            
+
+        # Copia DescricaoLEB → HistoricoLC
+            values[hist_idx] = values[desc_idx]
+
+        # Adiciona dados bancários ao final, se solicitado
+            if incluir_banco and values[hist_idx]:
+                values[hist_idx] = f"{values[hist_idx]} - Bco.{banco_nome} Ag.{agencia_nome} CC.{conta_nome}"
+
             self.tree.item(item, values=values)
 
+        lancamento_idx =  self.tree["columns"].index("LancamentoLC")
+        for i, item in enumerate(self.tree.get_children(), start=1):
+            values = list(self.tree.item(item, 'values'))
+            values[lancamento_idx] = str(i)
+            self.tree.item(item, values=values)
+
+    # Classificação usando fuzzy matching
         df_descricoes_normalizadas = self.df_banco_dados['Descricao'].apply(
             lambda x: unidecode(str(x).strip().upper())
         )
-
         df_banco_tipo_normalizado = self.df_banco_dados['Tipo'].apply(lambda x: str(x).strip().upper())
 
-        #? verifica os itens na treeview para classificar débito e crédito
         for idx, item in enumerate(self.tree.get_children(), start=1):
             values = self.tree.item(item, 'values')
-            descricao_idx = self.tree["columns"].index("LancamentoLC")
+            hist_idx = self.tree["columns"].index("HistoricoLC")
             valor_idx = self.tree["columns"].index("ValorLEB")
 
-            descricao = values[descricao_idx]
+            descricao = values[hist_idx]
             valor_raw = values[valor_idx]
             valor = self.corrigir_valor(valor_raw)
 
-            tipo = "D" if valor < 0 else "C" #? D se o valor for menor que 0, C se for maior
+            tipo = "D" if valor < 0 else "C"
 
             descricao_normalizada = unidecode(str(descricao).strip().upper())
 
@@ -382,9 +389,9 @@ class ImportadorExtratos:
                 melhores_matches.sort(key=lambda x: (x[1], len(x[0])), reverse=True)
                 descricao_mais_parecida, score_usado, indice_match = melhores_matches[0]
                 correspondencia = df_filtrado.iloc[indice_match]
-                                                      
-                debito = correspondencia.iloc[6]  #? coluna G (debito) no banco
-                credito = correspondencia.iloc[9]  #? coluna J (credito) no banco
+            
+                debito = correspondencia.iloc[6]
+                credito = correspondencia.iloc[9]
 
                 if "#BCO" in str(debito):
                     debito = conta_bancaria
@@ -396,17 +403,15 @@ class ImportadorExtratos:
                 print(f"🔍 Tipo: {tipo} 🔴 Débito: {debito} 🟢 Crédito: {credito} 🎯 Similaridade: {score}")
                 print("-" * 60)
 
-                #? atualizar apenas as colunas relevantes
-                novos_valores = list(values)  #? copiar os valores existentes
-                novos_valores[7] = debito  #? atualizar a coluna de debito
-                novos_valores[9] = credito  #? atualizar a coluna de credito
+                novos_valores = list(values)
+                novos_valores[7] = debito   # DebitoLC
+                novos_valores[9] = credito  # CreditoLC
                 self.tree.item(item, values=novos_valores)
 
         self.copiar_coluna("DataLEB", "DataLC")
         self.copiar_coluna("ValorLEB", "ValorLC")
-        self.copiar_coluna("LancamentoLC", "HistoricoLC")
-
         messagebox.showinfo("Classificar Dados", "Dados classificados com sucesso!")
+
 
     def executar_acao_para_banco(self, nome_banco, arquivo, respostas_safra=None):
         print(f"Banco detectado: {nome_banco}")
