@@ -163,7 +163,7 @@ class ImportadorExtratos:
         self.tree.tag_configure('linha_par', background='#313131') #? cinza
         self.tree.tag_configure('linha_impar', background='#272727') #? branco
 
-        self.tree.tag_configure('destaque', background='#ffff99') #? amarelo claro
+        self.tree.tag_configure('destaque', background='#00385B') #? amarelo claro
 
         #* -------------------- DEFINIR CABEÇALHOS DAS COLUNAS ------------------- #
         self.tree.heading("DataLEB", text="Data")
@@ -205,6 +205,8 @@ class ImportadorExtratos:
         root.grid_columnconfigure(3, weight=1)
         root.grid_columnconfigure(4, weight=1)
         root.grid_columnconfigure(5, weight=1)
+        
+        self.tree.bind("<Double-1>", self.editar_celula_treeview)
 
         self.total_linhas_label = tk.Label(root, text="Linhas Importadas: 0", font=("Roboto", 11), bg='#313131')
         self.total_linhas_label.grid(row=5, column=0, padx=10, sticky="w")
@@ -2403,6 +2405,35 @@ class ImportadorExtratos:
                 "3. O arquivo está fechado no Excel\n\n" +
                 f"Erro: {str(e)}")
             return
+
+    def editar_celula_treeview(self, event):
+        item_id = self.tree.focus()
+        if not item_id:
+            return
+
+        col = self.tree.identify_column(event.x)
+        row = self.tree.identify_row(event.y)
+
+        col_idx = int(col.replace('#', '')) - 1
+
+        valores = list(self.tree.item(item_id, 'values'))
+
+        x, y, width, height = self.tree.bbox(item_id, col)
+
+        self.entry_edit = tk.Entry(self.frame_tree)
+        self.entry_edit.place(x=x, y=y, width=width, height=height)
+        self.entry_edit.insert(0, valores[col_idx])
+        self.entry_edit.focus()
+
+        def salvar_novo_valor(event):
+            novo_valor = self.entry_edit.get()
+            valores[col_idx] = novo_valor
+            self.tree.item(item_id, values=valores)
+            self.entry_edit.destroy()
+
+        self.entry_edit.bind("<Return>", salvar_novo_valor)
+
+        self.entry_edit.bind("<FocusOut>", lambda e: self.entry_edit.destroy())
 
     def confirmar_limpar_dados(self):
         resposta = messagebox.askyesno("Atenção", "Tem certeza que deseja limpar todos os dados?")
