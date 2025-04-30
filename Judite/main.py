@@ -2180,7 +2180,125 @@ class ImportadorExtratos:
             dados_importados = []
             saldo_final_calculado = 0
 
-            if extensao == "xls": #! SE O ARQUIVO É XLS
+            if extensao == "pdf": #! SE O ARQUIVO É PDF
+                print("\n=== PROCESSANDO ARQUIVO PDF ===")
+                try:
+                    import pdfplumber 
+                    import re
+                    with pdfplumber.open(arquivo) as pdf:
+
+                        linhas = []
+                        capturar = False
+
+                        for pagina in pdf.pages:
+                            texto = pagina.extract_text()
+                            if texto:
+                                for linha in texto.split("\n"):
+                                    linha = linha.strip()
+                                    if not linha:
+                                        continue
+
+                                    if not capturar and "SALDO ANTERIOR" in linha.upper():
+                                        print("💰 Detectado 'SALDO ANTERIOR'")
+                                        match_valor = re.search(r"[-\d.,]+$", linha)
+                                        if match_valor:
+                                            saldo_str = match_valor.group()
+
+                                            self.saldo_inicial_entry.delete(0, tk.END)
+                                            self.saldo_inicial_entry.insert(0, saldo_str)
+
+                                            try:
+                                                saldo_inicial_float = float(saldo_str.replace(".", "").replace(",", "."))
+                                            except:
+                                                saldo_inicial_float = 0.0
+
+                                            saldo_final_calculado = saldo_inicial_float
+
+                                            print(f"✅ Saldo inicial preenchido: {saldo_str}")
+                                        capturar = True
+                                        continue
+
+                                    if capturar:
+                                        linhas.append(linha)
+
+                    print(f"📄 Total de linhas extraídas do PDF: {len(linhas)}")
+
+                    data_regex = re.compile(r'^\d{2}/\d{2}')
+                    transacoes = []
+                    self.tree.delete(*self.tree.get_children())
+
+                    for i, linha in enumerate(linhas):
+                        print(f"🔹 [{i}] Lendo linha: {linha}")
+                        if not isinstance(linha, str) or not data_regex.match(linha):
+                            continue
+
+                        partes = linha.split()
+                        if len(partes) < 3:
+                            continue
+                        
+                        data = partes[0]
+
+                        valores_numericos = [p for p in partes if re.fullmatch(r"-?\d{1,3}(\.\d{3})*,\d{2}", p)]
+                        if not valores_numericos:
+                            print(f"⏭️ Pulando linha sem valor identificado: {linha}")
+                            continue
+
+                        valor_str = valores_numericos[-1]
+                        saldo_str = valores_numericos[-2] if len(valores_numericos) >= 2 else ""
+
+                        try:
+                            idx_valor = len(partes) - list(reversed(partes)).index(valor_str) - 1
+                        except ValueError:
+                            print(f"⚠️ Valor não encontrado na linha: {linha}")
+                            continue
+
+                        if idx_valor == 2 and len(partes) == 3:
+                            descricao = partes[1]
+                        else:
+                            descricao = " ".join(partes[1:idx_valor])
+                        print(f"🧾 Descrição final: '{descricao}'")
+
+                        descricao_limpa = descricao.replace(" ", "").upper()
+                        if descricao_limpa.startswith("SALD"):
+                            print(f"⏭️  Ignorando linha com descrição suspeita de saldo: {descricao}")
+                            continue
+
+                        valor_float = self.corrigir_valor(valor_str)
+                        credito = valor_str if valor_float > 0 else ""
+                        debito = valor_str if valor_float < 0 else ""
+
+                        print(f"📌 Transação válida detectada: {data} | {descricao} | {valor_str}")
+                        transacoes.append([
+                            data, descricao, "",  # documento em branco
+                            credito or debito or "",
+                            saldo_str, "", "", "", "", "", "", "", "", ""
+                        ])
+
+                    print(f"✅ {len(transacoes)} transações extraídas com sucesso!")
+
+                    for i, t in enumerate(transacoes):
+                        tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                        self.tree.insert("", "end", values=t, tags=(tag,))
+
+                    self.atualizar_total_linhas_importadas()
+                    saldo_final_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+                    self.saldo_final_calculado_entry.delete(0, tk.END)
+                    self.saldo_final_calculado_entry.insert(0, saldo_final_frmt)
+
+                    messagebox.showinfo("Sucesso", f"{len(transacoes)} transações importadas do PDF Itaú!")
+
+                except Exception as e:
+                    print(f"❌ Erro ao processar PDF: {e}")
+                    traceback.print_exc()
+                    messagebox.showerror("Erro", f"Erro ao processar o PDF:\n\n{str(e)}")
+                return
+
+
+
+
+
+
+            elif extensao == "xls": #! SE O ARQUIVO É XLS
                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
                 wb = xlrd.open_workbook(arquivo)
                 sheet = wb.sheet_by_index(0)
@@ -2279,7 +2397,7 @@ class ImportadorExtratos:
                         traceback.print_exc()
                         continue
 
-            else: #! SE O ARQUIVO É XLSX
+            elif extensao == "xlsx": #! SE O ARQUIVO É XLSX
                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                 sheet = wb.active
