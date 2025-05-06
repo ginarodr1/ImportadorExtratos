@@ -492,6 +492,17 @@ class ImportadorExtratos:
             "Bco.Itaú": self.acao_itau, "Banco Itaú": self.acao_itau, "BANCO ITAÚ": self.acao_itau, "ITAÚ": self.acao_itau, "Itaú": self.acao_itau, "EXTRATO ITAU": self.acao_itau, "EXTRATO ITAÚ": self.acao_itau,
             "Bco.Brasil": self.acao_brasil, "Banco do Brasil": self.acao_brasil, "BANCO DO BRASIL": self.acao_brasil, "BB": self.acao_brasil, "BRASIL": self.acao_brasil, "Brasil": self.acao_brasil, "EXTRATO BB": self.acao_brasil,
             "Bco.Santander": self.acao_santander, "Banco Santander": self.acao_santander, "BANCO SANTANDER": self.acao_santander, "SANTANDER": self.acao_santander, "Santander": self.acao_santander, "EXTRATO SANTANDER": self.acao_santander,
+            "Bco.Inter": self.acao_inter, "Banco Inter": self.acao_inter, "BANCO INTER": self.acao_inter, "Inter": self.acao_inter, "INTER": self.acao_inter, "EXTRATO INTER": self.acao_inter,
+            "Bco.Caixa": self.acao_caixa, "Banco Caixa Eletrônica": self.acao_caixa, "BANCO CAIXA ELETRÔNICA": self.acao_caixa, "Caixa Eletrônica": self.acao_caixa, "Caixa": self.acao_caixa, "EXTRATO CAIXA": self.acao_caixa,
+            "Bco.Grafeno": self.acao_grafeno, "Banco Grafeno": self.acao_grafeno, "BANCO GRAFENO": self.acao_grafeno, "GRAFENO": self.acao_grafeno, "Grafeno": self.acao_grafeno, "EXTRATO GRAFENO": self.acao_grafeno,
+            "Bco.Pagseguro": self.acao_pagseguro, "Banco Pagseguro": self.acao_pagseguro, "BANCO PAGSEGURO": self.acao_pagseguro, "PAGSEGURO": self.acao_pagseguro, "Pagseguro": self.acao_pagseguro, "EXTRATO PAGSEGURO": self.acao_pagseguro,
+            "Bco.C6Bank": self.acao_c6bank, "Banco C6 Bank": self.acao_c6bank, "C6 Bank": self.acao_c6bank, "BANCO C6 BANK": self.acao_c6bank, "C6 BANK": self.acao_c6bank, "C6BANK": self.acao_c6bank, "C6": self.acao_c6bank, "c6": self.acao_c6bank, "EXTRATO C6": self.acao_c6bank,
+            "Bco.Itaú": self.acao_itau, "Banco Itaú": self.acao_itau, "BANCO ITAÚ": self.acao_itau, "ITAÚ": self.acao_itau, "Itaú": self.acao_itau, "EXTRATO ITAU": self.acao_itau,
+            "Bco.Santander": self.acao_santander, "Banco Santander": self.acao_santander, "BANCO SANTANDER": self.acao_santander, "SANTANDER": self.acao_santander, "Santander": self.acao_santander, "EXTRATO SANTANDER": self.acao_santander,
+            "Bco.HSBC": self.acao_hsbc, "Banco HSBC": self.acao_hsbc, "BANCO HSBC": self.acao_hsbc, "HSBC": self.acao_hsbc, "EXTRATO HSBC": self.acao_hsbc,
+            "Bco.Suisse": self.acao_suisse, "Banco Suisse": self.acao_suisse, "Banco Credit Suisse": self.acao_suisse, "Credit Suisse": self.acao_suisse, "CREDIT SUISSE": self.acao_suisse, "SUISSE": self.acao_suisse, "BANCO SUISSE": self.acao_suisse, "EXTRATO SUISSE": self.acao_suisse,
+            "Bco.Daycoval": self.acao_daycoval, "Banco Daycoval": self.acao_daycoval, "BANCO DAYCOVAL": self.acao_daycoval, "DAYCOVAL": self.acao_daycoval, "Daycoval": self.acao_daycoval, "EXTRATO DAYCOVAL": self.acao_daycoval,
+            "Bco.Sicredi": self.acao_sicredi, "Banco Sicredi": self.acao_sicredi, "BANCO SICREDI": self.acao_sicredi, "SICREDI": self.acao_sicredi, "Sicredi": self.acao_sicredi, "EXTRATO SICREDI": self.acao_sicredi,
         }
 
         print(f"Chaves disponíveis: {list(acoes.keys())}")
@@ -793,7 +804,6 @@ class ImportadorExtratos:
 
     def acao_safra(self, arquivo, respostas_safra):
         print("\n=== INÍCIO DO PROCESSAMENTO: SAFRA ===")
-        print(f"Arquivo recebido: {arquivo}")
         def formatar_valor_brasileiro(valor):
             try:
                 return locale.format_string("%.2f", float(valor), grouping=True)
@@ -809,6 +819,7 @@ class ImportadorExtratos:
                 if novo_formato:
                     if conta_vinculada: #! LÓGICA PARA ARQUIVO XLS/XLSX, NOVO FORMATO E CONTA VINCULADA
                         print("Processando XLS/XLSX, novo formato no Safra, conta vinculada.")
+                        print(f"Arquivo recebido: {arquivo}")
                         try:
                             dados_importados = []
                             saldo_final_calculado = 0
@@ -961,6 +972,7 @@ class ImportadorExtratos:
 
                             else: #! SE O ARQUIVO É XLSX
                                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+                                print(f"Arquivo recebido: {arquivo}")
                                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                                 sheet = wb.active
                                 print(f"Planilha ativa: {sheet.title}")
@@ -1145,6 +1157,7 @@ class ImportadorExtratos:
 
                             if extensao == "xls": #! SE O ARQUIVO É XLS
                                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
+                                print(f"Arquivo recebido: {arquivo}")
                                 import xlrd
                                 wb = xlrd.open_workbook(arquivo)
                                 sheet = wb.sheet_by_index(0)
@@ -1283,6 +1296,7 @@ class ImportadorExtratos:
 
                             else: #! SE O ARQUIVO É XLSX
                                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+                                print(f"Arquivo recebido: {arquivo}")
                                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                                 sheet = wb.active
                                 print(f"Planilha ativa: {sheet.title}")
@@ -1472,15 +1486,96 @@ class ImportadorExtratos:
 
             elif extensao == "pdf":
                 if novo_formato:
-                    if conta_vinculada: #! LÓGICA PARA ARQUIVO PDF, NOVO FORMATO E CONTA VINCULADA
-                        print("Processando PDF, novo formato do Safra, conta vinculada.")
+                    if conta_vinculada: #! ARQUIVO PDF, NOVO FORMATO E CONTA VINCULADA
+                        print("\n=== PROCESSANDO ARQUIVO PDF: CONTA VINCULADA ===")
+                        print(f"Arquivo Recebido: {arquivo}")
+                        dados_importados = []
+
+                        try:
+                            import pdfplumber
+                            import re
+                            from tkinter import messagebox
+
+                            saldo_final_calculado = 0
+                            transacoes = []
+                            linhas_processadas = []
+
+                            with pdfplumber.open(arquivo) as pdf:
+                                for pagina in pdf.pages:
+                                    texto = pagina.extract_text()
+                                    if texto:
+                                        linhas_processadas.extend([linha.strip() for linha in texto.split('\n') if linha.strip()])
+
+                            ano_extrato = None
+                            for linha in linhas_processadas:
+                                if "Período de" in linha:
+                                    match = re.search(r'Período de \d{2}/\d{2}/(\d{4})', linha)
+                                    if match:
+                                        ano_extrato = match.group(1)
+                                        break
+
+                            print(f"📄 Total de linhas extraídas do PDF: {len(linhas_processadas)}")
+
+                            data_regex = re.compile(r'^\d{2}/\d{2}')
+
+                            i = 0
+                            while i < len(linhas_processadas):
+                                linha = linhas_processadas[i].strip()
+
+                                if "CONTA VINCULADA" in linha.upper() or "SALDO POUPANCA PLUS" in linha.upper():
+                                    i += 1
+                                    continue
+
+                                if data_regex.match(linha):
+                                    partes = linha.split()
+                                    if len(partes) < 3:
+                                        continue
+                                    
+                                    data = f"{partes[0]}/{ano_extrato}" if ano_extrato else partes[0]
+                                    valor_str = partes[-1]
+                                    documento = partes[-2] if partes[-2] != '-' else ''
+                                    descricao = " ".join(partes[1:-2])
+
+                                    if i + 1 < len(linhas_processadas):
+                                        prox_linha = linhas_processadas[i + 1].strip()
+                                        if not data_regex.match(prox_linha) and "CONTA VINCULADA" not in prox_linha.upper() and "SALDO POUPANCA PLUS" not in prox_linha.upper():
+                                            descricao += " " + prox_linha
+                                            i += 1
+
+                                    valor = self.corrigir_valor(valor_str)
+                                    credito = valor_str if valor > 0 else ""
+                                    debito = valor_str if valor < 0 else ""
+
+                                    transacao = [data, descricao, documento, credito or debito or "", "", "", "", "", "", "", "", "", "", ""]
+                                    transacoes.append(transacao)
+                                    dados_importados.append(transacao)
+                                    saldo_final_calculado += valor
+                                i += 1
+
+                            print(f"🔎 Total de transações agrupadas: {len(transacoes)}")
+
+                            for i, t in enumerate(transacoes):
+                                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                                self.tree.insert("", "end", values=t, tags=(tag,))
+
+                            self.atualizar_total_linhas_importadas()
+                            saldo_final_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+                            self.saldo_final_calculado_entry.delete(0, tk.END)
+                            self.saldo_final_calculado_entry.insert(0, saldo_final_frmt)
+
+                            print(f"✅ {len(transacoes)} transações extraídas com sucesso!")
+                            messagebox.showinfo("Sucesso", f"{len(transacoes)} transações importadas do PDF Safra!")
+
+                        except Exception as e:
+                            print(f"❌ Erro ao processar PDF: {e}")
+                            traceback.print_exc()
+                            messagebox.showerror("Erro", f"Erro ao processar o PDF Safra:\n\n{str(e)}")
 
                     else: #! LÓGICA PARA ARQUIVO PDF, NOVO FORMATO E CONTA CORRENTE
-                        print("Processando PDF, novo formato do Safra, conta corrente.")
+                        print("\n=== PROCESSANDO ARQUIVO PDF: CONTA CORRENTE ===")
 
                 else: #! LÓGICA PARA ARQUIVO PDF, FORMATO ANTIGO
                     print("Processando PDF, formato antigo do Safra.")
-
 
             else:
                 print("Formato de arquivo não suportado.")
@@ -2293,11 +2388,6 @@ class ImportadorExtratos:
                     messagebox.showerror("Erro", f"Erro ao processar o PDF:\n\n{str(e)}")
                 return
 
-
-
-
-
-
             elif extensao == "xls": #! SE O ARQUIVO É XLS
                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
                 wb = xlrd.open_workbook(arquivo)
@@ -2647,7 +2737,7 @@ class ImportadorExtratos:
                         traceback.print_exc()
                         continue
 
-            else: #! SE O ARQUIVO É XLSX
+            elif extensao == "xlsx": #! SE O ARQUIVO É XLSX
                 print("\n=== PROCESSANDO ARQUIVO XLSX ===")
                 wb = openpyxl.load_workbook(arquivo, data_only=True)
                 sheet = wb.active
@@ -2765,6 +2855,32 @@ class ImportadorExtratos:
                 f"Erro: {str(e)}")
             return
 
+    #! ========== BANCOS QUE ESTÃO FALTANDO ==========
+
+    def acao_grafeno(self, arquivo):
+        print("Executando ação específica para o Grafeno.")
+
+    def acao_pagseguro(self, arquivo):
+        print("Executando ação específica para o Pagseguro.")
+
+    def acao_c6bank(self, arquivo):
+        print("Executando ação específica para o C6 Bank.")
+
+    def acao_hsbc(self, arquivo):
+        print("Executando ação específica para o HSBC.")
+
+    def acao_suisse(self, arquivo):
+        print("Executando ação específica para o Credit Suisse.")
+
+    def acao_sicredi(self, arquivo):
+        print("Executando ação específica para o Sicredi.")
+
+    def acao_inter(self, arquivo):
+        print("Executando ação específica para o Inter.")
+
+    def acao_caixa(self, arquivo):
+        print("Executando ação específica para a Caixa Eletrônica.")
+    
     def editar_celula_treeview(self, event):
         item_id = self.tree.focus()
         if not item_id:
@@ -3019,7 +3135,26 @@ class TelaSelecaoConta:
             if "Safra" in conta:
                 resp1 = messagebox.askyesno("Banco Safra", "O extrato está no formato PDF?")
                 if resp1:
-                    messagebox.showinfo("Aviso", "Funcionalidade de importação de PDF ainda não implementada.")
+                    print("O usuário escolheu a opção PDF.")
+                    resp11 = messagebox.askyesno("Banco Safra", "O extrato está no novo formato do Banco Safra?")
+                    if resp11:
+                        resp12 = messagebox.askyesno("Banco Safra", "O extrato é conta vinculada?")
+                        arquivo = filedialog.askopenfilename(filetypes=[("Arquivos PDF", "*.pdf")])
+                        #? armazenar as respostas para usar na acao_safra
+                        respostas_safra = {
+                            "novo_formato": True,
+                            "conta_vinculada": resp12
+                        }
+                    else:
+                        arquivo = filedialog.askopenfilename(filetypes=[("Arquivos PDF", "*.pdf")])
+                        respostas_safra = {
+                            "novo_formato": True,
+                            "conta_vinculada": False
+                        }
+
+
+
+
                 else:
                     resp2 = messagebox.askyesno("Banco Safra", "O extrato está no novo formato do Banco Safra?")
                     if resp2:
@@ -3039,7 +3174,6 @@ class TelaSelecaoConta:
             else:
                 pdf_resposta = messagebox.askyesno("Formato do Extrato", "O extrato está em PDF?")
                 if pdf_resposta:
-                    print("Usuário confirmou que é um PDF.")
                     arquivo = filedialog.askopenfilename(filetypes=[("Arquivos PDF", "*.pdf")])
                 else:
                     xlsx_resposta = messagebox.askyesno("Formato do Extrato", "O extrato está em XLS ou XLSX?")
