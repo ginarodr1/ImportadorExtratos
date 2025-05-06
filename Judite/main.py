@@ -1811,7 +1811,6 @@ class ImportadorExtratos:
                     messagebox.showerror("Erro", f"Erro ao processar o PDF:\n\n{str(e)}")
                 return
 
-
             elif extensao == 'xls': #! SE O ARQUIVO É XLS
                 print("\n=== PROCESSANDO ARQUIVO XLS ===")
                 wb = xlrd.open_workbook(arquivo)
@@ -2956,6 +2955,85 @@ class ImportadorExtratos:
                 self.tree.insert("", "end", values=dados, tags=(tag,))
 
             self.atualizar_total_linhas_importadas()
+
+        except Exception as e:
+            print("\n=== ERRO FATAL ===")
+            print(f"Erro: {str(e)}")
+            print("stack trace:")
+            traceback.print_exc()
+            messagebox.showerror("Erro",
+                "Erro ao processar o arquivo. Verifique se:\n\n" +
+                "1. O arquivo está no formato correto\n" +
+                "2. O arquivo não está em modo de exibição protegida\n" +
+                "3. O arquivo está fechado no Excel\n\n" +
+                f"Erro: {str(e)}")
+            return
+
+    def acao_inter(self, arquivo):
+        print("\n=== INÍCIO DO PROCESSAMENTO: INTER ===")
+        print(f"Arquivo Recebido: {arquivo}")
+        def formatar_valor_brasileiro(valor):
+            try:
+                return locale.format_string("%.2f", float(valor), grouping=True)
+            except:
+                return valor
+
+        try:
+            extensao = arquivo.lower().split('.')[-1]
+            print(f"Etensão detectada: {extensao}")
+            dados_importados = []
+            saldo_final_calculado = 0
+
+            if extensao == "pdf": #! SE O ARQUIVO É PDF
+                print("\n=== PROCESSANDO ARQUIVO PDF ===")
+
+                try:
+                    import pdfplumber
+                    import re
+                    with pdfplumber.open(arquivo) as pdf:
+
+                        linhas = []
+                        capturar = False
+
+                except Exception as e:
+                    print(f"❌ Erro ao processar PDF: {e}")
+                    traceback.print_exc()
+                    messagebox.showerror("Erro", f"Erro ao processar o PDF:\n\n{str(e)}")
+                return
+            
+            elif extensao == "xls": #! SE O ARQUIVO É XLS
+                print("\n=== PROCESSANDO ARQUIVO XLS ===")
+
+            elif extensao == "xlsx": #! SE O ARQUIVO É XLSX
+                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+
+            print("\n=== ATUALIZANDO INTERFACE ===")
+            print("Formatando saldo final...")
+            saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+            print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
+
+            print("Atualizando campo de saldo final...")
+            self.saldo_final_calculado_entry.delete(0, tk.END)
+            self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
+
+            print("\nLimpando Treeview...")
+            for i in self.tree.get_children():
+                self.tree.delete(i)
+
+            print("Inserindo dados na Treeview...")
+            print(f"Total de registros a inserir: {len(dados_importados)}")
+
+            for i, dados in enumerate(dados_importados):
+                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                dados[3] = formatar_valor_brasileiro(dados[3])
+
+                self.tree.insert("", "end", values=dados, tags=(tag,))
+
+            self.atualizar_total_linhas_importadas()
+                    
+            print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
+            print(f"Total de linhas processadas: {len(dados_importados)}")
 
         except Exception as e:
             print("\n=== ERRO FATAL ===")
