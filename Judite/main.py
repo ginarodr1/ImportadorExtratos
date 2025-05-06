@@ -820,6 +820,10 @@ class ImportadorExtratos:
                     if conta_vinculada: #! LÓGICA PARA ARQUIVO XLS/XLSX, NOVO FORMATO E CONTA VINCULADA
                         print("Processando XLS/XLSX, novo formato no Safra, conta vinculada.")
                         print(f"Arquivo recebido: {arquivo}")
+                        import pdfplumber
+                        import re
+                        from tkinter import messagebox
+
                         try:
                             dados_importados = []
                             saldo_final_calculado = 0
@@ -1151,6 +1155,10 @@ class ImportadorExtratos:
 
                     else: #! LÓGICA PARA ARQUIVO XLS/XLSX, NOVO FORMATO E CONTA CORRENTE
                         print("Processando XLS/XLSX, novo formato do Safra, conta corrente.")
+                        import pdfplumber
+                        import re
+                        from tkinter import messagebox
+
                         try:
                             dados_importados = []
                             saldo_final_calculado = 0
@@ -1490,14 +1498,14 @@ class ImportadorExtratos:
                         print("\n=== PROCESSANDO ARQUIVO PDF: CONTA VINCULADA ===")
                         print(f"Arquivo Recebido: {arquivo}")
                         dados_importados = []
+                        transacoes = []
+
+                        import pdfplumber
+                        import re
+                        from tkinter import messagebox
 
                         try:
-                            import pdfplumber
-                            import re
-                            from tkinter import messagebox
-
                             saldo_final_calculado = 0
-                            transacoes = []
                             linhas_processadas = []
 
                             with pdfplumber.open(arquivo) as pdf:
@@ -1573,6 +1581,113 @@ class ImportadorExtratos:
 
                     else: #! LÓGICA PARA ARQUIVO PDF, NOVO FORMATO E CONTA CORRENTE
                         print("\n=== PROCESSANDO ARQUIVO PDF: CONTA CORRENTE ===")
+                        print(f"Arquivo Recebido: {arquivo}")
+                        dados_importados = []
+                        transacoes = []
+
+                        try:
+                            import pdfplumber
+                            import re
+                            from tkinter import messagebox
+
+                            saldo_final_calculado = 0
+                            linhas_processadas = []
+
+                            with pdfplumber.open(arquivo) as pdf:
+                                for pagina in pdf.pages:
+                                    texto = pagina.extract_text()
+                                    if texto:
+                                        linhas = [linha.strip() for linha in texto.split('\n') if linha.strip()]
+                                        linhas_processadas.extend(linhas)
+
+                            ano_extrato = None
+                            for linha in linhas_processadas:
+                                if "Período de" in linha:
+                                    match = re.search(r'Período de \d{2}/\d{2}/(\d{4})', linha)
+                                    if match:
+                                        ano_extrato = match.group(1)
+                                        break
+
+                            print(f"📄 Total de linhas extraídas do PDF (Corrente): {len(linhas_processadas)}")
+
+                            data_regex = re.compile(r'^\d{2}/\d{2}')
+                            i = 0
+                            saldo_final_definido = False
+
+                            while i < len(linhas_processadas):
+                                linha = linhas_processadas[i].strip()
+
+                                if data_regex.match(linha):
+                                    partes = linha.split()
+                                    if len(partes) < 3:
+                                        i += 1
+                                        continue
+
+                                    data = f"{partes[0]}/{ano_extrato}" if ano_extrato else partes[0]
+                                    valor_str = partes[-1]
+                                    documento = partes[-2] if partes[-2] != '-' else ''
+                                    descricao = " ".join(partes[1:-2])
+
+                                    if i + 1 < len(linhas_processadas):
+                                        prox_linha = linhas_processadas[i + 1].strip()
+                                        if not data_regex.match(prox_linha):
+                                            descricao += " " + prox_linha
+                                            i += 1
+
+                                    if "SALDO CONTA" in descricao.upper():
+                                        if not saldo_final_definido:
+                                            valor = self.corrigir_valor(valor_str)
+                                            saldo_final_frmt = locale.format_string("%.2f", valor, grouping=True)
+                                            self.saldo_final_entry.delete(0, tk.END)
+                                            self.saldo_final_entry.insert(0, saldo_final_frmt)
+                                            saldo_final_definido = True
+                                        i += 1
+                                        continue
+
+                                    valor = self.corrigir_valor(valor_str)
+                                    credito = valor_str if valor > 0 else ""
+                                    debito = valor_str if valor < 0 else "" 
+
+                                    transacao = [data, descricao, documento, credito or debito or "", "", "", "", "", "", "", "", "", "", ""]
+                                    transacoes.append(transacao)
+                                    dados_importados.append(transacao)
+                                    saldo_final_calculado += valor
+
+                                    # Obter e converter o saldo final importado do campo de entrada
+                                    saldo_final_importado_str = self.saldo_final_entry.get().replace(".", "").replace(",", ".")
+                                    try:
+                                        saldo_final_importado = float(saldo_final_importado_str)
+                                    except ValueError:
+                                        saldo_final_importado = 0.0
+
+                                    # Calcular a diferença
+                                    diferenca = saldo_final_importado - saldo_final_calculado
+
+                                    # Exibir a diferença no campo apropriado
+                                    diferenca_frmt = locale.format_string("%.2f", diferenca, grouping=True)
+                                    self.diferenca_entry.delete(0, tk.END)
+                                    self.diferenca_entry.insert(0, diferenca_frmt)
+
+                                i += 1
+
+                            print(f"🔎 Total de transações conta corrente agrupadas: {len(transacoes)}")
+
+                            for i, t in enumerate(transacoes):
+                                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                                self.tree.insert("", "end", values=t, tags=(tag,))
+
+                            self.atualizar_total_linhas_importadas()
+                            saldo_final_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+                            self.saldo_final_calculado_entry.delete(0, tk.END)
+                            self.saldo_final_calculado_entry.insert(0, saldo_final_frmt)
+
+                            print(f"✅ {len(transacoes)} transações de conta corrente importadas com sucesso!")
+                            messagebox.showinfo("Sucesso", f"{len(transacoes)} transações importadas do PDF Safra (Conta Corrente)!")
+
+                        except Exception as e:
+                            print(f"❌ Erro ao processar PDF: {e}")
+                            traceback.print_exc()
+                            messagebox.showerror("Erro", f"Erro ao processar o PDF Safra Conta Corrente:\n\n{str(e)}")
 
                 else: #! LÓGICA PARA ARQUIVO PDF, FORMATO ANTIGO
                     print("Processando PDF, formato antigo do Safra.")
