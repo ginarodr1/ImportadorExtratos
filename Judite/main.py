@@ -319,7 +319,7 @@ class ImportadorExtratos:
         try:
             if os.path.exists('contas.csv'):
                 df_contas = pd.read_csv('contas.csv')
-                filtro = (df_contas['Empresa'] == self.empresa_entry.get()) & (df_contas['Banco'] == self.banco_entry.get())
+                filtro = (df_contas['empresa'] == self.empresa_entry.get()) & (df_contas['banco'] == self.banco_entry.get())
                 conta_encontrada = df_contas[filtro]
                 if not conta_encontrada.empty:
                     conta_ativo = str(conta_encontrada.iloc[0]['Conta Ativo']).strip()
@@ -2980,8 +2980,9 @@ class ImportadorExtratos:
 
         try:
             extensao = arquivo.lower().split('.')[-1]
-            print(f"Etensão detectada: {extensao}")
+            print(f"Extensão detectada: {extensao}")
             dados_importados = []
+            transacoes = []
             saldo_final_calculado = 0
 
             if extensao == "pdf": #! SE O ARQUIVO É PDF
@@ -2990,10 +2991,92 @@ class ImportadorExtratos:
                 try:
                     import pdfplumber
                     import re
-                    with pdfplumber.open(arquivo) as pdf:
+                    from tkinter import messagebox
 
-                        linhas = []
-                        capturar = False
+                    def corrigir_valor(valor_str):
+                        valor_str = valor_str.replace("R$", "").replace(".", "").replace(",", ".").replace(" ", "")
+                        return float(valor_str)
+
+                    def converter_data_extenso_para_ddmm(data_extenso):
+                        meses = {
+                            "janeiro": "01", "fevereiro": "02", "março": "03", "abril": "04",
+                            "maio": "05", "junho": "06", "julho": "07", "agosto": "08",
+                            "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12"
+                        }
+                        match = re.match(r"(\d{1,2}) de (\w+) de (\d{4})", data_extenso.lower())
+                        if match:
+                            dia, mes_nome, ano = match.groups()
+                            mes = meses.get(mes_nome)
+                            if mes:
+                                return f"{int(dia):02d}/{mes}/{ano}"
+                        return data_extenso
+
+                    data_regex = re.compile(r'^\d{1,2} de [A-Za-zçÇ]+ de \d{4}')
+                    linhas_processadas = []
+
+                    with pdfplumber.open(arquivo) as pdf:
+                        for pagina in pdf.pages:
+                            texto = pagina.extract_text()
+                            if texto:
+                                linhas_processadas.extend([linha.strip() for linha in texto.split('\n') if linha.strip()])
+
+                    i = 0
+                    while i < len(linhas_processadas):
+                        linha = linhas_processadas[i]
+
+                        if data_regex.match(linha):
+                            data_linha = linha
+                            data_formatada = converter_data_extenso_para_ddmm(data_linha)
+
+                            descricao = ""
+                            valor = 0.0
+                            credito = ""
+                            debito = ""
+
+                            if i + 1 < len(linhas_processadas):
+                                proxima_linha = linhas_processadas[i + 1].strip()
+
+                                if not data_regex.match(proxima_linha):
+                                    descricao = re.sub(r'-?R\$ ?[\d\.,]+.*', '', proxima_linha).strip()
+
+                                    valor_match = re.search(r'-?\s*R\$ ?[\d\.,]+', proxima_linha)
+                                    if not valor_match:
+                                        valor_match = re.search(r'-?\s*R\$ ?[\d\.,]+', linha)
+
+                                    if valor_match:
+                                        valor_str = valor_match.group(0)
+
+                                        valor = corrigir_valor(valor_str)
+
+                                        print(f"Valor bruto extraído: '{valor_str}' -> Valor corrigido: {valor}")
+
+                                        valor_str_formatado = locale.format_string("%.2f", valor, grouping=True)
+
+                                        credito = valor_str_formatado if valor > 0 else ""
+                                        debito = valor_str_formatado if valor < 0 else ""
+
+                                    i += 1
+
+                            transacao = [data_formatada, descricao, "", credito or debito or "", "", "", "", "", "", "", "", "", ""]
+                            transacoes.append(transacao)
+                            dados_importados.append(transacao)
+                            saldo_final_calculado += valor
+
+                        i += 1
+
+                    for transacao in dados_importados:
+                        self.tree.insert("", "end", values=transacao)
+                    
+                    try:
+                        saldo_final_str = self.saldo_final_entry.get().replace(".", "").replace(",", ".")
+                        saldo_final = float(saldo_final_str)
+                        diferenca = saldo_final - saldo_final_calculado
+
+                        diferenca_frmt = locale.format_string("%.2f", diferenca, grouping=True)
+                        self.diferenca_entry.delete(0, tk.END)
+                        self.diference_entry.insert(0, diferenca_frmt)
+                    except:
+                        pass
 
                 except Exception as e:
                     print(f"❌ Erro ao processar PDF: {e}")
@@ -3067,9 +3150,6 @@ class ImportadorExtratos:
 
     def acao_sicredi(self, arquivo):
         print("Executando ação específica para o Sicredi.")
-
-    def acao_inter(self, arquivo):
-        print("Executando ação específica para o Inter.")
 
     def acao_caixa(self, arquivo):
         print("Executando ação específica para a Caixa Eletrônica.")
