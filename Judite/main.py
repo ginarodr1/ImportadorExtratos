@@ -3287,10 +3287,11 @@ class TelaSelecaoConta:
         self.label_empresa.grid(row=2, column=0, pady=1, padx=10, sticky="w")
 
         self.empresas = self.carregar_empresas()
-        self.combobox_empresa = ttk.Combobox(root, values=self.empresas, font=("Roboto", 10), width=61)
+        self.empresa_var = tk.StringVar()
+        self.combobox_empresa = ttk.Combobox(root, textvariable=self.empresa_var, font=("Roboto", 10), width=61)
+        self.combobox_empresa['values'] = self.empresas
         self.combobox_empresa.grid(row=3, column=0, pady=1, padx=10, sticky="w")
-        self.combobox_empresa.bind("<<ComboboxSelected>>", self.atualizar_contas_contabeis)
-        self.combobox_empresa.bind("<KeyRelease>", self.atualizar_contas_contabeis)
+        self.combobox_empresa.bind("<KeyRelease>", self.filtrar_empresas)
 
         self.label_conta_contabil = tk.Label(root, text="Conta Contábil:", font=("Roboto", 10), bg='#313131')
         self.label_conta_contabil.grid(row=4, column=0, pady=1, padx=10, sticky="w")
@@ -3313,6 +3314,18 @@ class TelaSelecaoConta:
 
         self.btn_cancelar = ttk.Button(root, text="Cancelar", command=self.cancelar, width=8)
         self.btn_cancelar.grid(row=6, column=0, pady=5, padx=22, sticky="e")
+
+    def filtrar_empresas(self, event=None):
+        texto_digitado = self.combobox_empresa.get().lower()
+        empresas_filtradas = [e for e in self.empresas if texto_digitado in e.lower()]
+        self.combobox_empresa['values'] = empresas_filtradas
+
+        if len(empresas_filtradas) == 1:
+            self.combobox_empresa.set(empresas_filtradas[0])
+            self.atualizar_contas_contabeis()
+
+        if empresas_filtradas and not self.combobox_empresa.winfo_ismapped():
+            self.root.after(100, lambda: self.combobox_empresa.event_generate('<Down>'))
 
     def atualizar_contas_contabeis(self, event=None):
         empresa = self.combobox_empresa.get()
