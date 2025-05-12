@@ -3202,6 +3202,7 @@ class ImportadorExtratos:
                             print(match.groups())
 
                         valor_float = self.corrigir_valor(valor_str)
+<<<<<<< HEAD
                         if valor_tipo == "D":
                             valor_float = -abs(valor_float)
                         else:
@@ -3215,6 +3216,14 @@ class ImportadorExtratos:
                         transacoes.append([
                             data, descricao, documento,
                             valor_str_formatado if valor_float > 0 else f"-{valor_str_formatado}",
+=======
+                        credito = valor_str if valor_tipo == "C" else ""
+                        debito = valor_str if valor_tipo == "D" else ""
+
+                        transacoes.append([
+                            data, descricao, documento,
+                            credito or debito or "",
+>>>>>>> 0a4f88de5eb7e1aa783715502d8279a2318a6290
                             saldo_str, "", "", "", "", "", "", "", "", ""
                         ])
 
