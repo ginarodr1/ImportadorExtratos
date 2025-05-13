@@ -2904,11 +2904,13 @@ class ImportadorExtratos:
                         historico = sheet.cell(row=row, column=8).value
                         num_doc = sheet.cell(row=row, column=6).value
                         valor = sheet.cell(row=row, column=9).value
+                        tipo_operacao = sheet.cell(row=row, column=10).value
 
                         print(f"Valores lidos:")
                         print(f"  Histórico: {historico}")
                         print(f"  N° Doc: {num_doc}")
                         print(f"  Valor: {valor}")
+                        print(f"  Tipo: {tipo_operacao}")
 
                         def converter_para_float(valor):
                             if valor is None or valor == "":
@@ -2921,6 +2923,9 @@ class ImportadorExtratos:
                                 return 0.0
                             
                         valor_total = converter_para_float(valor)
+
+                        if tipo_operacao and str(tipo_operacao).strip().upper() == "D":
+                            valor_total = -abs(valor_total)
                         valor_formatado = formatar_valor_brasileiro(valor_total)
                         print(f"Valor total calculado: {valor_total}")
 
@@ -3202,7 +3207,6 @@ class ImportadorExtratos:
                             print(match.groups())
 
                         valor_float = self.corrigir_valor(valor_str)
-<<<<<<< HEAD
                         if valor_tipo == "D":
                             valor_float = -abs(valor_float)
                         else:
@@ -3216,14 +3220,6 @@ class ImportadorExtratos:
                         transacoes.append([
                             data, descricao, documento,
                             valor_str_formatado if valor_float > 0 else f"-{valor_str_formatado}",
-=======
-                        credito = valor_str if valor_tipo == "C" else ""
-                        debito = valor_str if valor_tipo == "D" else ""
-
-                        transacoes.append([
-                            data, descricao, documento,
-                            credito or debito or "",
->>>>>>> 0a4f88de5eb7e1aa783715502d8279a2318a6290
                             saldo_str, "", "", "", "", "", "", "", "", ""
                         ])
 
@@ -3293,6 +3289,133 @@ class ImportadorExtratos:
                 f"Erro: {str(e)}")
             return
 
+    def acao_c6bank(self, arquivo):
+        print("\n=== INÍCIO DO PROCESSAMENTO: C6 BANK ===")
+        print(f"Arquivo Recebido: {arquivo}")
+        def formatar_valor_brasileiro(valor):
+            try:
+                return locale.format_string("%.2f", float(valor), grouping=True)
+            except:
+                return valor
+        try:
+            extensao = arquivo.lower().split('.')[-1]
+            print(f"Extensão detectada: {extensao}")
+            dados_importados = []
+            saldo_final_calculado = 0
+
+            if extensao == 'pdf': #! SE O ARQUIVO É PDF
+                print("\n=== PROCESSANDO ARQUIVO PDF ===")
+                import pdfplumber
+                import re
+
+                with pdfplumber.open(arquivo) as pdf:
+                    linhas = []
+                    for pagina in pdf.pages:
+                        texto = pagina.extract_text()
+                        if texto:
+                            linhas.extend(texto.split('\n'))
+
+                print(f"📄 Total de linhas extraídas do PDF: {len(linhas)}")
+
+                regex_linha = re.compile(r'(\d{2}/\d{2})\s+.*?\s+(.+?)\s+(-?R?\$?\s*\d[\d\s\.,]*)$')
+
+                transacoes = []
+
+                for i, linha in enumerate(linhas):
+                    print(f"🔹 [{i}] Lendo linha: {linha}")
+
+                    match = regex_linha.search(linha)
+                    if not match:
+                        continue
+
+                    data = match.group(1)
+                    descricao = match.group(2).strip()
+                    valor_str = match.group(3).replace(" ", "").replace("R$", "").replace(".", "").replace(",", ".")
+                
+                    try:
+                        valor = float(valor_str)
+                    except ValueError:
+                        print(f"⚠️ Erro ao converter valor: {valor_str}")
+                        continue
+
+                    credito = locale.currency(valor, grouping=True) if valor > 0 else ""
+                    debito = locale.currency(-valor, grouping=True) if valor < 0 else ""
+
+                    transacoes.append([
+                        data, descricao, "",
+                        credito,
+                        debito,
+                        "", "", "", "", "", "", "", "", ""
+                    ])
+
+                print("\n=== ATUALIZANDO INTERFACE ===")
+                self.tree.delete(*self.tree.get_children())
+
+                for i, t in enumerate(transacoes):
+                    tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+                    while len(t) < 14:
+                        t.append("")
+                    self.tree.insert("", "end", values=t, tags=(tag,))
+
+                self.atualizar_total_linhas_importadas()
+
+                saldo_final = sum(float(t[3].replace("R$", "").replace(".", "").replace(",", ".")) if t[3] else -float(t[4].replace("R$", "").replace(".", "").replace(",", ".")) for t in transacoes)
+                saldo_final_frmt = locale.currency(saldo_final, grouping=True)
+
+                self.saldo_final_calculado_entry.delete(0, tk.END)
+                self.saldo_final_calculado_entry.insert(0, saldo_final_frmt)
+
+                print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
+                print(f"Total de linhas processadas: {len(transacoes)}")
+                messagebox.showinfo("Sucesso", f"{len(transacoes)} transações importadas com sucesso.")
+
+            elif extensao == 'xls': #! SE O ARQUIVO É XLS
+                print("\n=== PROCESSANDO ARQUIVO XLS ===")
+
+            elif extensao == 'xlsx': #! SE O ARQUIVO É XLSX
+                print("\n=== PROCESSANDO ARQUIVO XLSX ===")
+            
+            print("\n=== ATUALIZANDO INTERFACE ===")
+            print("Formatando saldo final...")
+            saldo_final_calculado_frmt = locale.format_string("%.2f", saldo_final_calculado, grouping=True)
+            print(f"Saldo final formatado: R${saldo_final_calculado_frmt}")
+
+            print("Atualizando campo de saldo final...")
+            self.saldo_final_calculado_entry.delete(0, tk.END)
+            self.saldo_final_calculado_entry.insert(0, saldo_final_calculado_frmt)
+
+            print("\nLimpando Treeview...")
+            for i in self.tree.get_children():
+                self.tree.delete(i)
+
+            print("Inserindo dados na Treeview...")
+            print(f"Total de registros a inserir: {len(dados_importados)}")
+
+            for i, dados in enumerate(dados_importados):
+                tag = 'linha_par' if i % 2 == 0 else 'linha_impar'
+
+                dados[3] = formatar_valor_brasileiro(dados[3])
+
+                self.tree.insert("", "end", values=dados, tags=(tag,))
+
+            self.atualizar_total_linhas_importadas()
+                    
+            print("\n=== PROCESSAMENTO CONCLUÍDO COM SUCESSO ===")
+            print(f"Total de linhas processadas: {len(dados_importados)}")
+
+        except Exception as e:
+            print("\n=== ERRO FATAL ===")
+            print(f"Erro: {str(e)}")
+            print("stack trace:")
+            traceback.print_exc()
+            messagebox.showerror("Erro",
+                "Erro ao processar o arquivo. Verifique se:\n\n" +
+                "1. O arquivo está no formato correto\n" +
+                "2. O arquivo não está em modo de exibição protegida\n" +
+                "3. O arquivo está fechado no Excel\n\n" +
+                f"Erro: {str(e)}")
+            return
+
     #! ========== BANCOS QUE ESTÃO FALTANDO ==========
 
     def acao_grafeno(self, arquivo):
@@ -3300,9 +3423,6 @@ class ImportadorExtratos:
 
     def acao_pagseguro(self, arquivo):
         print("Executando ação específica para o Pagseguro.")
-
-    def acao_c6bank(self, arquivo):
-        print("Executando ação específica para o C6 Bank.")
 
     def acao_hsbc(self, arquivo):
         print("Executando ação específica para o HSBC.")
