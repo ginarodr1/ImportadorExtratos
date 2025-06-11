@@ -2596,7 +2596,6 @@ class ImportadorExtratos:
 
         return dados_importados, saldo_final, saldo_inicial_frmt
 
-
     def extrato_itau2_xls(self, sheet, wb): #! SE O ARQUIVO SER SHOCK EM XLS
 
         def formatar_valor_brasileiro(valor):
@@ -2700,7 +2699,6 @@ class ImportadorExtratos:
 
         return dados_importados, saldo_final, saldo_inicial_frmt
             
-
     def extrato_itau1_xlsx(self, sheet): #! SE O ARQUIVO FOR PADRÃO EM XLSX
 
         def formatar_valor_brasileiro(valor):
@@ -2808,7 +2806,6 @@ class ImportadorExtratos:
 
         return dados_importados, saldo_final, saldo_inicial_frmt
     
-
     def extrato_itau2_xlsx(self, sheet): #! SE O ARQUIVO SER SHOCK EM XLSX
 
         def formatar_valor_brasileiro(valor):
@@ -2911,7 +2908,6 @@ class ImportadorExtratos:
 
         return dados_importados, saldo_final, saldo_inicial_frmt
 
-
     def extrato_itau1_pdf(self, arquivo): #! SE O ARQUIVO FOR PADRÃO EM PDF
         def formatar_valor_brasileiro(valor):
             try:
@@ -2926,7 +2922,6 @@ class ImportadorExtratos:
 
         return dados_importados, saldo_final
     
-
     def extrato_itau2_pdf(self, arquivo): #! SE O ARQUIVO SER SHOCK EM PDF
         def formatar_valor_brasileiro(valor):
             try:
