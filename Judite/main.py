@@ -12,6 +12,19 @@ import traceback
 import xlrd
 from unidecode import unidecode
 from fuzzywuzzy import process, fuzz
+import sys
+import os
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
+def caminho_dos_csv(nome_arquivo):
+    #"""Retorna o caminho absoluto do CSV com base na pasta do script"""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), nome_arquivo)
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
@@ -29,8 +42,11 @@ class ImportadorExtratos:
         self.root.state("zoomed")
         self.root.iconbitmap(r"C:\Users\regina.santos\Desktop\Automacao\Judite\icon.ico")
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_janela)
-        csv_file_path = r"C:\Users\regina.santos\Desktop\Automacao\Judite\lancamentoscontas1.csv"
-        self.df_banco_dados = pd.read_csv(csv_file_path, delimiter=';')
+
+        self.df_banco_dados = pd.read_csv(resource_path("lancamentoscontas1.csv"), delimiter=';')
+        self.empresas_df = pd.read_csv(resource_path("empresas.csv"))
+        self.contas_df = pd.read_csv(resource_path("contas.csv"))
+
 
         self.root.tk.call("source", "C:/Users/regina.santos/Desktop/Automacao/Forest-ttk-theme/forest-dark.tcl")
         style = ttk.Style(self.root)
@@ -211,6 +227,8 @@ class ImportadorExtratos:
         self.total_linhas_label = tk.Label(root, text="Linhas Importadas: 0", font=("Roboto", 11), bg='#313131')
         self.total_linhas_label.grid(row=5, column=0, padx=10, sticky="w")
 
+    
+
     def buscar_termo_treeview(self):
         termo = self.busca_entry.get().strip().lower()
 
@@ -248,17 +266,21 @@ class ImportadorExtratos:
         self.root.destroy() #? fecha a janela principal
 
     def abrir_explorador_arquivos(self, empresa, conta, arquivo, respostas_safra=None):
+        try:
+            conta_ativo, banco, agencia, conta_bancaria, empresa_codigo = conta.split(",")
+        except:
+            messagebox.showerror("Erro", "O formato da conta está incorreto.")
+            return
+        
         self.empresa_entry.delete(0, tk.END)
-        self.empresa_entry.insert(0, empresa.split(" - ")[0])
+        self.empresa_entry.insert(0, empresa_codigo.strip())
         self.conta_entry.delete(0, tk.END)
-        self.conta_entry.insert(0, conta.split(" - ")[0])
+        self.conta_entry.insert(0, conta_ativo.strip())
         self.banco_entry.delete(0, tk.END)
-        self.banco_entry.insert(0, conta.split(" - ")[1])
+        self.banco_entry.insert(0, banco.strip())
 
-        agencia = conta.split(" - ")[3]
-        conta_bancaria = conta.split(" - ")[4]
         self.agencia_conta_entry.delete(0, tk.END)
-        self.agencia_conta_entry.insert(0, f"{agencia}/{conta_bancaria}")
+        self.agencia_conta_entry.insert(0, f"{agencia.strip()}/{conta_bancaria.strip()}")
 
         self.detectar_banco(arquivo, respostas_safra)
 
@@ -3592,6 +3614,11 @@ class TelaSelecaoConta:
         self.btn_cancelar = ttk.Button(root, text="Cancelar", command=self.cancelar, width=8)
         self.btn_cancelar.grid(row=6, column=0, pady=5, padx=22, sticky="e")
 
+    def atualizar_empresas(self):
+        self.empresas = self.carregar_empresas()
+        self.combobox_empresa['values'] = self.empresas
+        self.combobox_empresa.set('')
+
     def filtrar_empresas(self, event=None):
         texto_digitado = self.combobox_empresa.get().lower()
         empresas_filtradas = [e for e in self.empresas if texto_digitado in e.lower()]
@@ -3622,24 +3649,29 @@ class TelaSelecaoConta:
             self.combobox_conta_contabil['values'] = []
 
     def carregar_empresas(self):
+        caminho = caminho_dos_csv('empresas.csv')
         empresas = []
-        if os.path.exists('empresas.csv'):
-            with open('empresas.csv', mode='r', newline='') as file:
+        if os.path.exists(caminho):
+            with open(caminho, mode='r', newline='') as file:
                 reader = csv.reader(file)
                 for row in reader:
-                    if row:
+                    if len(row) >= 2:
                         empresas.append(f"{row[0]} - {row[1]}")
+        print("Empresas carregadas:", empresas)
         return empresas
 
     def carregar_contas_contabeis(self, codigo_empresa):
+        caminho = caminho_dos_csv('contas.csv')
         contas = []
-        if os.path.exists('contas.csv'):
-            with open('contas.csv', mode='r', newline='') as file:
+        if os.path.exists(caminho):
+            with open(caminho, mode='r', newline='') as file:
                 reader = csv.reader(file)
-                next(reader, None)
                 for row in reader:
-                    if row and re.search(rf',{codigo_empresa}$', ','.join(row)):
-                        contas.append(f"{row[0]} - {row[1]} - {row[2]} - {row[3]} - {row[4]} - {row[5]}")
+                    if len(row) >= 6 and row[5] == codigo_empresa:
+                        descricao = f"{row[0]}, {row[1]}, {row[2]}, {row[3]}, {row[5]}"
+                        contas.append(descricao)
+        print("Empresa selecionada: ", codigo_empresa)
+        print("Contas encontradas: ", contas)
         return contas
 
     def abrir_tela_nova_empresa(self):
@@ -3653,18 +3685,22 @@ class TelaSelecaoConta:
             app = TelaNovaConta(self.tela_nova_conta, self.salvar_nova_conta)
 
     def salvar_nova_empresa(self, codigo, razao_social):
-        with open('empresas.csv', mode='a', newline='') as file:
+        caminho = caminho_dos_csv('empresas.csv')
+        with open(caminho, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([codigo, razao_social])
         messagebox.showinfo("Nova Empresa", "Empresa adicionada com sucesso!")
         self.combobox_empresa['values'] = self.carregar_empresas()
 
+
     def salvar_nova_conta(self, codigo_empresa, banco, agencia, conta_bancaria, conta_ativo, conta_passivo):
-        with open('contas.csv', mode='a', newline='') as file:
+        caminho = caminho_dos_csv('contas.csv')
+        with open(caminho, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([codigo_empresa, banco, agencia, conta_bancaria, conta_ativo, conta_passivo])
         messagebox.showinfo("Nova Conta", "Conta adicionada com sucesso!")
         self.combobox_conta_contabil['values'] = self.carregar_contas_contabeis()
+
 
     def verificar_empresa(self, event):
         empresa = self.combobox_empresa.get()
