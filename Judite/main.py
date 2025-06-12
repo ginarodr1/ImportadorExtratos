@@ -1,3 +1,22 @@
+import sys
+import os
+import getpass
+import logging
+
+log_dir = r"C:\Users\regina.santos\Desktop\Automacao\Judite"
+os.makedirs(log_dir, exist_ok=True)
+user = getpass.getuser()
+log_path = os.path.join(log_dir, f"{user}.log")
+
+logging.basicConfig(
+    filename=log_path,
+    filemode='a',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
+logging.info(f"Aplicação iniciada pelo usuário {user}")
+
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, simpledialog
 import openpyxl
@@ -12,8 +31,6 @@ import traceback
 import xlrd
 from unidecode import unidecode
 from fuzzywuzzy import process, fuzz
-import sys
-import os
 
 def resource_path(relative_path):
     try:
@@ -35,6 +52,7 @@ def open_main_window():
 
 class ImportadorExtratos:
     def __init__(self, root):
+        logging.info("Janela principal iniciada.")
         self.root = root
         self.root.title("Importador de Extratos Bancários")
         self.root.geometry("1000x600")
@@ -3570,6 +3588,7 @@ class ImportadorExtratos:
 
 class TelaSelecaoConta:
     def __init__(self, root, callback):
+        logging.info("Janela de seleção de conta iniciada.")
         self.root = root
         self.callback = callback
         self.root.title("Importador")
@@ -3798,6 +3817,7 @@ class TelaSelecaoConta:
         
 class TelaNovaConta:
     def __init__(self, root, callback):
+        logging.info("Janela para criação de conta iniciada.")
         self.root = root
         self.callback = callback
         self.root.title("Nova Conta")
@@ -3870,6 +3890,7 @@ class TelaNovaConta:
 
 class TelaNovaEmpresa:
     def __init__(self, root, callback):
+        logging.info("Janela para criação de empresa iniciada.")
         self.root = root
         self.callback = callback
         self.root.title("Nova Empresa")
